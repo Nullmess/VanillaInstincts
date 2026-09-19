@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:adaptive_load/overloaded_budget_is_reduced",
+  "environment": "vanillainstincts:adaptive_load",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

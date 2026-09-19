@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:crying_portal_network/z_frame_has_canonical_outer_base",
+  "environment": "vanillainstincts:crying_portal_network",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

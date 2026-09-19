@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:creeper_spider_tactics/creeper_fuse_movement_is_walking_speed",
+  "environment": "vanillainstincts:creeper_spider_tactics",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

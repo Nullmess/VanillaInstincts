@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:runtime_diagnostics/severe_rejection_is_error",
+  "environment": "vanillainstincts:runtime_diagnostics",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

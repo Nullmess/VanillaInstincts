@@ -1,0 +1,11 @@
+{
+  "priority": 100,
+  "professions": [
+    "minecraft:armorer",
+    "minecraft:toolsmith",
+    "minecraft:weaponsmith"
+  ],
+  "walk_on": {
+    "minecraft:smooth_stone": 0.75
+  }
+}

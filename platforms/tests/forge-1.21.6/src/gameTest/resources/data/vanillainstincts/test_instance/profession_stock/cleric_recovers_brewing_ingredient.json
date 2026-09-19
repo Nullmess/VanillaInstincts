@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:profession_stock/cleric_recovers_brewing_ingredient",
+  "environment": "vanillainstincts:profession_stock",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

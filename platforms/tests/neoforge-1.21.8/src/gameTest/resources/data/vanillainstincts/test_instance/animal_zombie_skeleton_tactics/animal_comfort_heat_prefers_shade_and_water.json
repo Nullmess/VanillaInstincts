@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:animal_zombie_skeleton_tactics/animal_comfort_heat_prefers_shade_and_water",
+  "environment": "vanillainstincts:animal_zombie_skeleton_tactics",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

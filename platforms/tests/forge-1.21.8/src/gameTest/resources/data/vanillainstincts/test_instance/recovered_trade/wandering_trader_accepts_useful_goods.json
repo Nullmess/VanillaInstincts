@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:recovered_trade/wandering_trader_accepts_useful_goods",
+  "environment": "vanillainstincts:recovered_trade",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

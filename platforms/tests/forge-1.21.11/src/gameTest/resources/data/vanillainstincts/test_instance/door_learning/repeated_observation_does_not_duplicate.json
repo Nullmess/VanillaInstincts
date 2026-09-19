@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:door_learning/repeated_observation_does_not_duplicate",
+  "environment": "vanillainstincts:door_learning",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

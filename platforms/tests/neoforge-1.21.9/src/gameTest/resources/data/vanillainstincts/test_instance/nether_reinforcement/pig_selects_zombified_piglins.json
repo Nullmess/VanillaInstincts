@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:nether_reinforcement/pig_selects_zombified_piglins",
+  "environment": "vanillainstincts:nether_reinforcement",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

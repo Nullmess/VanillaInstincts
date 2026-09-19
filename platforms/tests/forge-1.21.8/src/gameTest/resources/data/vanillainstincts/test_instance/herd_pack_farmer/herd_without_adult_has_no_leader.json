@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:herd_pack_farmer/herd_without_adult_has_no_leader",
+  "environment": "vanillainstincts:herd_pack_farmer",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

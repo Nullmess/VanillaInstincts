@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:adaptive_load/probability_can_never_exceed_one",
+  "environment": "vanillainstincts:adaptive_load",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

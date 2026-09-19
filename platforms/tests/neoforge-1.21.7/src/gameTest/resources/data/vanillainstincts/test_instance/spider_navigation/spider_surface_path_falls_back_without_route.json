@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:spider_navigation/spider_surface_path_falls_back_without_route",
+  "environment": "vanillainstincts:spider_navigation",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

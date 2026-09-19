@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:village_alert_patrol/neighboring_golems_prefer_different_sectors",
+  "environment": "vanillainstincts:village_alert_patrol",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

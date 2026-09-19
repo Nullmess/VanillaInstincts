@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:spider_navigation/spider_surface_nodes_map_support_modes",
+  "environment": "vanillainstincts:spider_navigation",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

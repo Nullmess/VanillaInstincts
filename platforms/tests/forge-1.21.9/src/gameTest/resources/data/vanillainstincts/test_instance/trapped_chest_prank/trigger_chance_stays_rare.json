@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:trapped_chest_prank/trigger_chance_stays_rare",
+  "environment": "vanillainstincts:trapped_chest_prank",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

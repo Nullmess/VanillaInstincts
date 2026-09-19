@@ -1,0 +1,8 @@
+{
+  "priority": 90,
+  "professions": ["*"],
+  "exclude_professions": ["minecraft:farmer"],
+  "avoid": {
+    "minecraft:farmland": 2.25
+  }
+}

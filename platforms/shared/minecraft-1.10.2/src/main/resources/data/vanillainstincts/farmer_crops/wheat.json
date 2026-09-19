@@ -1,0 +1,9 @@
+{
+  "priority": 100,
+  "item": "minecraft:wheat_seeds",
+  "crop": "minecraft:wheat",
+  "plant_on": ["#vanillainstincts:farmer_plantable_on"],
+  "age_property": "age",
+  "mature_age": 7,
+  "replant": true
+}

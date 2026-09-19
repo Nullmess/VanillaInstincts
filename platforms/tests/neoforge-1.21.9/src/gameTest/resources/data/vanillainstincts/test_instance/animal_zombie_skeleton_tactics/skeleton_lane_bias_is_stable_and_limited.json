@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:animal_zombie_skeleton_tactics/skeleton_lane_bias_is_stable_and_limited",
+  "environment": "vanillainstincts:animal_zombie_skeleton_tactics",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

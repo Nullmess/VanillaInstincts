@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:crying_portal_network/crying_x_round_trip_keeps_coordinate",
+  "environment": "vanillainstincts:crying_portal_network",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

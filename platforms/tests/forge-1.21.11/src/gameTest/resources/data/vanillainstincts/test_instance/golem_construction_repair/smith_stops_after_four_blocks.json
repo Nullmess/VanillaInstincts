@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:golem_construction_repair/smith_stops_after_four_blocks",
+  "environment": "vanillainstincts:golem_construction_repair",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

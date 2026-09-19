@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:golem_construction_repair/enough_iron_starts_full_repair",
+  "environment": "vanillainstincts:golem_construction_repair",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

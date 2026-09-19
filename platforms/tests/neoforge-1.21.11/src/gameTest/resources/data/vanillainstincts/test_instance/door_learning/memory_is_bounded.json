@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:door_learning/memory_is_bounded",
+  "environment": "vanillainstincts:door_learning",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

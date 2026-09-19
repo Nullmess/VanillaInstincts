@@ -1,0 +1,141 @@
+// Shared Forge 1.6.1-1.6.4 build logic.
+//
+// Each target keeps only its version declaration in platforms/forge-1.6.x/build.gradle.
+// The actual toolchain, source surface, Java 7 bytecode guard and JAR metadata live here
+// so a maintenance fix cannot silently drift between the four validated 1.6.x builds.
+
+if (!project.ext.has('vi16Minecraft')) {
+    throw new GradleException('Missing vi16Minecraft for Forge 1.6.x target.')
+}
+
+apply plugin: 'forge'
+
+String vi16Minecraft = String.valueOf(project.ext.vi16Minecraft)
+if (!(vi16Minecraft in ['1.6.1', '1.6.2', '1.6.3', '1.6.4'])) {
+    throw new GradleException("Unsupported Forge 1.6.x Minecraft version: ${vi16Minecraft}")
+}
+
+// ForgeGradle 1.0 still points these tasks at the retired Minecraft.Download
+// S3 endpoint. The project wrapper pre-seeds and SHA-1-verifies both 1.6.4
+// vanilla JARs before Gradle starts, then passes viLegacy164Seeded=true.
+if (project.hasProperty('viLegacy164Seeded')
+        && String.valueOf(project.property('viLegacy164Seeded')) == 'true') {
+    ['downloadClient', 'downloadServer'].each { taskName ->
+        tasks.matching { it.name == taskName }.all { task ->
+            task.onlyIf { false }
+        }
+    }
+}
+
+version = '1.0.0'
+group = 'fr.vanillainstincts'
+archivesBaseName = "vanilla-instincts-forge-mc${vi16Minecraft}"
+
+// ForgeGradle 1.0 bundles ASM 4 / SpecialSource-era tooling. Gradle itself
+// runs on JDK 8, but production classes must remain Java 7 bytecode (major 51)
+// so :reobf can read them reliably.
+sourceCompatibility = targetCompatibility = '1.7'
+
+File repoRoot = file('../..').canonicalFile
+File native16Root = new File(repoRoot, 'platforms/adapters/forge/minecraft-1.6.x-native')
+File adapterRoot = new File(repoRoot, "platforms/adapters/forge/minecraft-${vi16Minecraft}")
+File coreRoot = new File(repoRoot, 'core-legacy')
+
+minecraft {
+    // ForgeGradle 1.0 has a usable userdev for 1.6.4. The validated 1.6.1-1.6.3
+    // compatibility profiles deliberately compile the tiny common bridge through
+    // that same workspace and emit SRG names for the intended runtime version.
+    version = '1.6.4-9.11.1.964'
+    assetDir = 'run/assets'
+}
+
+repositories {
+    mavenCentral()
+    maven { url = 'https://maven.minecraftforge.net/' }
+}
+
+sourceSets {
+    main {
+        // Do not compile platforms/shared/minecraft-1.6.x. Those family folders
+        // contain release metadata only; production code comes from this native
+        // 1.6.x bridge, the version bootstrap and the Minecraft-free core.
+        java.srcDirs = [
+            new File(coreRoot, 'src/main/java'),
+            new File(native16Root, 'src/main/java'),
+            new File(adapterRoot, 'src/legacy16/java')
+        ]
+        resources.srcDirs = [new File(adapterRoot, 'src/main/resources')]
+    }
+}
+
+tasks.withType(JavaCompile) {
+    options.encoding = 'UTF-8'
+    sourceCompatibility = '1.7'
+    targetCompatibility = '1.7'
+}
+
+// Prevent modern Minecraft/Forge APIs from leaking back into the validated 1.6.x
+// source surface. This guard is shared by all four targets rather than only 1.6.1/1.6.2.
+task verifyLegacySourceSurface {
+    doLast {
+        List<String> forbidden = [
+            'net.minecraft.init.',
+            'cpw.mods.fml.common.eventhandler.',
+            'org.apache.logging.log4j.',
+            'net.minecraftforge.fml.'
+        ]
+        sourceSets.main.java.files.findAll {
+            it.isFile() && it.name.endsWith('.java')
+        }.each { sourceFile ->
+            String text = sourceFile.getText('UTF-8')
+            forbidden.each { marker ->
+                if (text.contains(marker)) {
+                    throw new GradleException(
+                            "Forge 1.6.x source-surface regression: ${sourceFile} contains ${marker}")
+                }
+            }
+        }
+    }
+}
+
+compileJava.dependsOn verifyLegacySourceSurface
+
+// Fail with the offending class name before ForgeGradle's old ASM stack produces
+// its opaque IllegalArgumentException during :reobf.
+task verifyLegacyBytecode(dependsOn: compileJava) {
+    doLast {
+        fileTree(dir: compileJava.destinationDir, include: '**/*.class').each { classFile ->
+            classFile.withInputStream { input ->
+                DataInputStream data = new DataInputStream(new BufferedInputStream(input))
+                int magic = data.readInt()
+                if (magic != -889275714) {
+                    throw new GradleException("Invalid class file: ${classFile}")
+                }
+                data.readUnsignedShort() // minor
+                int major = data.readUnsignedShort()
+                if (major > 51) {
+                    throw new GradleException(
+                            "Forge 1.6.x requires Java 7 bytecode for ForgeGradle 1.0 reobf; "
+                                    + "${classFile.name} has class major ${major}.")
+                }
+            }
+        }
+    }
+}
+
+tasks.matching { it.name == 'reobf' }.all { reobfTask ->
+    reobfTask.dependsOn verifyLegacyBytecode
+}
+
+jar {
+    manifest {
+        attributes([
+            'Specification-Title': 'Vanilla Instincts',
+            'Specification-Vendor': 'Vanilla Instincts',
+            'Specification-Version': '1.0.0',
+            'Implementation-Title': 'Vanilla Instincts',
+            'Implementation-Version': '1.0.0',
+            'Implementation-Vendor': 'Vanilla Instincts'
+        ])
+    }
+}

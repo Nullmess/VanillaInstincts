@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:golem_ceremony_nether/cleric_remains_optional",
+  "environment": "vanillainstincts:golem_ceremony_nether",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

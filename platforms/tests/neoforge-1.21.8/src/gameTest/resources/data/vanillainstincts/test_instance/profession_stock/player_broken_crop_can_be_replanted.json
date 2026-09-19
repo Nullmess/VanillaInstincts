@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:profession_stock/player_broken_crop_can_be_replanted",
+  "environment": "vanillainstincts:profession_stock",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

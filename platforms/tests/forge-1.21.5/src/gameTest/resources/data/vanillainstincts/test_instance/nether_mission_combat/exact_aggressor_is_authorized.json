@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:nether_mission_combat/exact_aggressor_is_authorized",
+  "environment": "vanillainstincts:nether_mission_combat",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

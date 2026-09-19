@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:nether_reinforcement/fatal_fall_threshold_is_twenty_four",
+  "environment": "vanillainstincts:nether_reinforcement",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

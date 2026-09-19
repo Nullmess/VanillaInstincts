@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:adaptive_load/visible_cadence_retains_priority",
+  "environment": "vanillainstincts:adaptive_load",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

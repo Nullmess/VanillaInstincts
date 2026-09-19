@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:enderman_cargo/injured_monster_can_be_rescued",
+  "environment": "vanillainstincts:enderman_cargo",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

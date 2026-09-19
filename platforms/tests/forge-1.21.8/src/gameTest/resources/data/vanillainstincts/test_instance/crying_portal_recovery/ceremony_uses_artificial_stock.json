@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:crying_portal_recovery/ceremony_uses_artificial_stock",
+  "environment": "vanillainstincts:crying_portal_recovery",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

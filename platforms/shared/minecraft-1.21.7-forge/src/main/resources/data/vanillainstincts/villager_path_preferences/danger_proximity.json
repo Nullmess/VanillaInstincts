@@ -1,0 +1,18 @@
+{
+  "priority": 100,
+  "professions": "*",
+  "avoid_near": {
+    "#vanillainstincts:villager_dangerous_blocks": {
+      "radius": 3,
+      "weight": 9.0
+    },
+    "minecraft:fire": {
+      "radius": 3,
+      "weight": 10.0
+    },
+    "minecraft:lava": {
+      "radius": 4,
+      "weight": 12.0
+    }
+  }
+}

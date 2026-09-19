@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:crying_portal_recovery/crying_frame_x_axis_is_recognized",
+  "environment": "vanillainstincts:crying_portal_recovery",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

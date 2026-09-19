@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:creeper_spider_tactics/creeper_blast_exposure_controls_damage",
+  "environment": "vanillainstincts:creeper_spider_tactics",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

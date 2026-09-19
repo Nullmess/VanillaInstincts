@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:creeper_spider_tactics/creeper_tactical_fuse_continues_inside_damage_range",
+  "environment": "vanillainstincts:creeper_spider_tactics",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

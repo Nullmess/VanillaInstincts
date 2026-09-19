@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:village_schedule_economy/transition_break_starts_after_production",
+  "environment": "vanillainstincts:village_schedule_economy",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

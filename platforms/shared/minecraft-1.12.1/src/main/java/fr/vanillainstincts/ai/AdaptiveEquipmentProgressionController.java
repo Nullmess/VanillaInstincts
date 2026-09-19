@@ -1,0 +1,358 @@
+package fr.vanillainstincts.ai;
+
+import fr.vanillainstincts.config.FeatureGate;
+import fr.vanillainstincts.core.config.DifficultyTier;
+import fr.vanillainstincts.core.config.FeatureFlag;
+import fr.vanillainstincts.core.config.RuntimeConfig;
+import fr.vanillainstincts.core.rules.AdaptiveEquipmentRules;
+import fr.vanillainstincts.core.rules.AdaptiveEquipmentRules.Tier;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.UUID;
+import net.minecraft.advancements.Advancement;
+import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.util.ResourceLocation;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.world.WorldServer;
+import net.minecraft.entity.player.EntityPlayerMP;
+import java.util.Random;
+import net.minecraft.inventory.EntityEquipmentSlot;
+import net.minecraft.entity.EntityLiving;
+import net.minecraft.entity.monster.AbstractSkeleton;
+import net.minecraft.entity.monster.EntityWitherSkeleton;
+import net.minecraft.entity.monster.EntityZombie;
+import net.minecraft.entity.monster.EntityZombieVillager;
+import net.minecraft.entity.monster.EntityPigZombie;
+import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
+import net.minecraft.init.Items;
+import net.minecraft.enchantment.Enchantment;
+import net.minecraft.init.Enchantments;
+
+/**
+ * Rare equipment tiers unlocked by the nearby player's vanilla progression.
+ * The player demonstrates mastery first; only then can natural hostile spawns
+ * occasionally mirror that equipment tier.
+ */
+public final class AdaptiveEquipmentProgressionController {
+    private static final ResourceLocation SUIT_UP = advancement(
+            "story/obtain_armor");
+    private static final ResourceLocation COVER_ME_WITH_DIAMONDS = advancement(
+            "story/shiny_gear");
+    private static final ResourceLocation COVER_ME_WITH_DEBRIS = advancement(
+            "nether/netherite_armor");
+    private static final ResourceLocation ENCHANTER = advancement(
+            "story/enchant_item");
+
+    private static final String TARGET =
+            "vanillainstincts_equipment_progression_target";
+    private static final String EQUIPMENT_TIER =
+            "vanillainstincts_equipment_progression_tier";
+    private static final String ENCHANTED =
+            "vanillainstincts_equipment_progression_enchanted";
+    private static final String ENCHANT_LEVEL =
+            "vanillainstincts_equipment_progression_enchant_level";
+
+    private AdaptiveEquipmentProgressionController() {
+    }
+
+    public static void onMobJoin(EntityLiving mob, WorldServer level,
+                                 boolean loadedFromDisk) {
+        if (!eligible(mob) || level == null) return;
+        if (tier(mob) != null || loadedFromDisk
+               ) {
+            return;
+        }
+
+        EntityPlayerMP owner = nearestProgressedPlayer(mob, level);
+        if (owner == null) return;
+        DifficultyTier difficulty = FeatureGate.difficulty(level);
+        Tier selected = selectTier(mob, owner, level, difficulty);
+        if (selected == null) return;
+
+        boolean enchanted = hasAdvancement(owner, ENCHANTER)
+                &&fr.vanillainstincts.compat.Minecraft112Compat.random(mob).nextDouble() < enchantedChance(difficulty);
+        promote(mob, owner.getUniqueID(), selected, enchanted, difficulty, level);
+    }
+
+    public static Tier tier(EntityLiving mob) {
+        if (mob == null) return null;
+        return Tier.fromId(mob.getEntityData().getInteger(EQUIPMENT_TIER));
+    }
+
+    public static boolean isEnchantedVariant(EntityLiving mob) {
+        return mob != null && mob.getEntityData().getBoolean(ENCHANTED);
+    }
+
+    /** Tier-aware axe used by shield-counter variants when entering melee. */
+    public static ItemStack adaptiveAxe(EntityLiving mob) {
+        Tier tier = tier(mob);
+        Item item = fr.vanillainstincts.compat.LegacyJava8.eval(() -> { switch ((tier == null ? Tier.IRON : tier)) { case IRON:  return Items.IRON_AXE; case DIAMOND:  return Items.DIAMOND_AXE; case NETHERITE:  return Items.DIAMOND_AXE;  default: throw new AssertionError("Unexpected switch value"); } });
+        return prepareWeapon(mob, new ItemStack(item));
+    }
+
+    /** Tier-aware bow enchantments while preserving the skeleton bow identity. */
+    public static ItemStack adaptiveBow(EntityLiving mob) {
+        return prepareWeapon(mob, new ItemStack(Items.BOW));
+    }
+
+    public static ItemStack prepareWeapon(EntityLiving mob, ItemStack stack) {
+        if (mob == null || stack == null || stack.isEmpty()) return stack;
+        if (!(mob.world instanceof WorldServer)
+                || !isEnchantedVariant(mob)) {
+            return stack;
+        } WorldServer level = (WorldServer) (mob.world);
+        int enchantLevel = enchantmentLevel(mob);
+        if (stack.getItem().equals(Items.BOW)) {
+            addEnchantment(level, stack, Enchantments.POWER, enchantLevel);
+        } else if (isSwordOrAxe(stack)) {
+            addEnchantment(level, stack, Enchantments.SHARPNESS,
+                    enchantLevel);
+        }
+        return stack;
+    }
+
+    public static ResourceLocation suitUpAdvancementId() {
+        return SUIT_UP;
+    }
+
+    public static ResourceLocation diamondAdvancementId() {
+        return COVER_ME_WITH_DIAMONDS;
+    }
+
+    public static ResourceLocation netheriteAdvancementId() {
+        return COVER_ME_WITH_DEBRIS;
+    }
+
+    public static ResourceLocation enchanterAdvancementId() {
+        return ENCHANTER;
+    }
+
+    private static Tier selectTier(EntityLiving mob, EntityPlayerMP owner,
+                                   WorldServer level,
+                                   DifficultyTier difficulty) {
+        if (hasAdvancement(owner, COVER_ME_WITH_DEBRIS)
+                && canPromote(mob, level, Tier.NETHERITE, difficulty)) {
+            return Tier.NETHERITE;
+        }
+        if (hasAdvancement(owner, COVER_ME_WITH_DIAMONDS)
+                && canPromote(mob, level, Tier.DIAMOND, difficulty)) {
+            return Tier.DIAMOND;
+        }
+        if (hasAdvancement(owner, SUIT_UP)
+                && canPromote(mob, level, Tier.IRON, difficulty)) {
+            return Tier.IRON;
+        }
+        return null;
+    }
+
+    private static boolean canPromote(EntityLiving mob, WorldServer level, Tier tier,
+                                      DifficultyTier difficulty) {
+        if (countLocal(level, mob, tier)
+                >= AdaptiveEquipmentRules.localLimit(tier)) {
+            return false;
+        }
+        double normalChance = RuntimeConfig.chance(
+                FeatureFlag.ADAPTIVE_EQUIPMENT, tier.normalChance());
+        double chance = AdaptiveEquipmentRules.spawnChance(
+                normalChance, difficulty);
+        return fr.vanillainstincts.compat.Minecraft112Compat.random(mob).nextDouble() < chance;
+    }
+
+    private static double enchantedChance(DifficultyTier difficulty) {
+        double normalChance = RuntimeConfig.chance(
+                FeatureFlag.ADAPTIVE_EQUIPMENT,
+                AdaptiveEquipmentRules.ENCHANTED_NORMAL_CHANCE);
+        return AdaptiveEquipmentRules.spawnChance(normalChance, difficulty);
+    }
+
+    private static void promote(EntityLiving mob, UUID targetId, Tier tier,
+                                boolean enchanted,
+                                DifficultyTier difficulty,
+                                WorldServer level) {
+        NBTTagCompound data = mob.getEntityData();
+        data.setUniqueId(TARGET, targetId);
+        data.setInteger(EQUIPMENT_TIER, tier.id());
+        data.setBoolean(ENCHANTED, enchanted);
+        data.setInteger(ENCHANT_LEVEL,
+                AdaptiveEquipmentRules.enchantmentLevel(tier, difficulty));
+
+        int pieces = armorPieceCount(mob, tier, difficulty);
+        equipArmor(mob, level, tier, pieces, enchanted);
+        equipRoleWeapon(mob, tier);
+    }
+
+    private static int armorPieceCount(EntityLiving mob, Tier tier,
+                                       DifficultyTier difficulty) {
+        int maximum = AdaptiveEquipmentRules.maximumArmorPieces(
+                tier, difficulty);
+        if (maximum <= 0) return 0;
+        if (tier == Tier.NETHERITE && difficulty == DifficultyTier.HARD
+                &&fr.vanillainstincts.compat.Minecraft112Compat.random(mob).nextDouble()
+                < AdaptiveEquipmentRules.FULL_NETHERITE_VARIANT_CHANCE) {
+            return 4;
+        }
+        return 1 +fr.vanillainstincts.compat.Minecraft112Compat.random(mob).nextInt(maximum);
+    }
+
+    private static void equipArmor(EntityLiving mob, WorldServer level, Tier tier,
+                                   int pieces, boolean enchanted) {
+        List<EntityEquipmentSlot> slots = new ArrayList<>(fr.vanillainstincts.compat.LegacyJava8.listOf(
+                EntityEquipmentSlot.HEAD, EntityEquipmentSlot.CHEST,
+                EntityEquipmentSlot.LEGS, EntityEquipmentSlot.FEET));
+        int remaining = Math.min(pieces, slots.size());
+        while (remaining-- > 0 && !slots.isEmpty()) {
+            int index =fr.vanillainstincts.compat.Minecraft112Compat.random(mob).nextInt(slots.size());
+            EntityEquipmentSlot slot = slots.remove(index);
+            if (!shouldReplaceArmor(mob.getItemStackFromSlot(slot), tier)) continue;
+            ItemStack stack = armorFor(tier, slot);
+            wearEquipment(stack, tier,fr.vanillainstincts.compat.Minecraft112Compat.random(mob));
+            if (enchanted) enchantArmor(level, stack, slot,
+                    enchantmentLevel(mob));
+            mob.setItemStackToSlot(slot, stack);
+        }
+    }
+
+    private static void equipRoleWeapon(EntityLiving mob, Tier tier) {
+        if (mob instanceof AbstractSkeleton) {
+            if (mob.getHeldItemMainhand().getItem().equals(Items.BOW)) {
+                mob.setItemStackToSlot(EntityEquipmentSlot.MAINHAND, adaptiveBow(mob));
+            }
+            return;
+        }
+        if (!(mob instanceof EntityZombie)) return; EntityZombie zombie = (EntityZombie) (mob);
+        if (AdaptiveProgressionController.isAngler(zombie)
+                || AdaptiveProgressionController.isPearlHunter(zombie)) {
+            return;
+        }
+        if (AdaptiveShieldResponseController.isZombieFlanker(zombie)) {
+            mob.setItemStackToSlot(EntityEquipmentSlot.MAINHAND, adaptiveAxe(mob));
+            return;
+        }
+        ItemStack current = mob.getHeldItemMainhand();
+        if (!current.isEmpty() && !isSwordOrAxe(current)) return;
+        ItemStack weapon =fr.vanillainstincts.compat.Minecraft112Compat.random(mob).nextBoolean()
+                ? swordFor(tier) : adaptiveAxe(mob);
+        if (!weapon.getItem().equals(Items.BOW)) {
+            wearEquipment(weapon, tier,fr.vanillainstincts.compat.Minecraft112Compat.random(mob));
+        }
+        mob.setItemStackToSlot(EntityEquipmentSlot.MAINHAND,
+                prepareWeapon(mob, weapon));
+    }
+
+    private static ItemStack swordFor(Tier tier) {
+        Item item = fr.vanillainstincts.compat.LegacyJava8.eval(() -> { switch ((tier)) { case IRON:  return Items.IRON_SWORD; case DIAMOND:  return Items.DIAMOND_SWORD; case NETHERITE:  return Items.DIAMOND_SWORD;  default: throw new AssertionError("Unexpected switch value"); } });
+        return new ItemStack(item);
+    }
+
+    private static ItemStack armorFor(Tier tier, EntityEquipmentSlot slot) {
+        Item item = fr.vanillainstincts.compat.LegacyJava8.eval(() -> { switch ((tier)) { case IRON:  return fr.vanillainstincts.compat.LegacyJava8.eval(() -> { switch ((slot)) { case HEAD:  return Items.IRON_HELMET; case CHEST:  return Items.IRON_CHESTPLATE; case LEGS:  return Items.IRON_LEGGINGS; case FEET:  return Items.IRON_BOOTS; default:  return Items.AIR; } }); case DIAMOND:  return fr.vanillainstincts.compat.LegacyJava8.eval(() -> { switch ((slot)) { case HEAD:  return Items.DIAMOND_HELMET; case CHEST:  return Items.DIAMOND_CHESTPLATE; case LEGS:  return Items.DIAMOND_LEGGINGS; case FEET:  return Items.DIAMOND_BOOTS; default:  return Items.AIR; } }); case NETHERITE:  return fr.vanillainstincts.compat.LegacyJava8.eval(() -> { switch ((slot)) { case HEAD:  return Items.DIAMOND_HELMET; case CHEST:  return Items.DIAMOND_CHESTPLATE; case LEGS:  return Items.DIAMOND_LEGGINGS; case FEET:  return Items.DIAMOND_BOOTS; default:  return Items.AIR; } });  default: throw new AssertionError("Unexpected switch value"); } });
+        return new ItemStack(item);
+    }
+
+    private static void enchantArmor(WorldServer level, ItemStack stack,
+                                     EntityEquipmentSlot slot, int enchantLevel) {
+        Enchantment enchantment = slot == EntityEquipmentSlot.FEET
+                ? Enchantments.FEATHER_FALLING : Enchantments.PROTECTION;
+        addEnchantment(level, stack, enchantment, enchantLevel);
+    }
+
+    private static void addEnchantment(WorldServer level, ItemStack stack,
+                                       Enchantment enchantment,
+                                       int enchantLevel) {
+        stack.addEnchantment(enchantment, enchantLevel);
+    }
+
+    private static int enchantmentLevel(EntityLiving mob) {
+        return Math.max(1, Math.min(4,
+                mob.getEntityData().getInteger(ENCHANT_LEVEL)));
+    }
+
+    private static boolean shouldReplaceArmor(ItemStack current, Tier tier) {
+        return current.isEmpty() || armorRank(current) < tier.id();
+    }
+
+    private static int armorRank(ItemStack stack) {
+        if (stack.getItem().equals(Items.DIAMOND_HELMET)
+                || stack.getItem().equals(Items.DIAMOND_CHESTPLATE)
+                || stack.getItem().equals(Items.DIAMOND_LEGGINGS)
+                || stack.getItem().equals(Items.DIAMOND_BOOTS)) return 3;
+        if (stack.getItem().equals(Items.DIAMOND_HELMET)
+                || stack.getItem().equals(Items.DIAMOND_CHESTPLATE)
+                || stack.getItem().equals(Items.DIAMOND_LEGGINGS)
+                || stack.getItem().equals(Items.DIAMOND_BOOTS)) return 2;
+        if (stack.getItem().equals(Items.IRON_HELMET)
+                || stack.getItem().equals(Items.IRON_CHESTPLATE)
+                || stack.getItem().equals(Items.IRON_LEGGINGS)
+                || stack.getItem().equals(Items.IRON_BOOTS)) return 1;
+        return 0;
+    }
+
+    private static void wearEquipment(ItemStack stack, Tier tier,
+                                      Random random) {
+        if (stack == null || !stack.isItemStackDamageable()) return;
+        double minimum = fr.vanillainstincts.compat.LegacyJava8.eval(() -> { switch ((tier)) { case IRON:  return 0.25D; case DIAMOND:  return 0.40D; case NETHERITE:  return 0.60D;  default: throw new AssertionError("Unexpected switch value"); } });
+        double maximum = fr.vanillainstincts.compat.LegacyJava8.eval(() -> { switch ((tier)) { case IRON:  return 0.60D; case DIAMOND:  return 0.72D; case NETHERITE:  return 0.86D;  default: throw new AssertionError("Unexpected switch value"); } });
+        double ratio = minimum + random.nextDouble() * (maximum - minimum);
+        int damage = (int) Math.round(stack.getMaxDamage() * ratio);
+        stack.setItemDamage(Math.min(stack.getMaxDamage() - 1, damage));
+    }
+
+    private static boolean isSwordOrAxe(ItemStack stack) {
+        return stack.getItem().equals(Items.IRON_SWORD) || stack.getItem().equals(Items.DIAMOND_SWORD)
+                || stack.getItem().equals(Items.DIAMOND_SWORD)
+                || stack.getItem().equals(Items.IRON_AXE) || stack.getItem().equals(Items.DIAMOND_AXE)
+                || stack.getItem().equals(Items.DIAMOND_AXE);
+    }
+
+    private static boolean eligible(EntityLiving mob) {
+        if (mob instanceof EntityZombie) { EntityZombie zombie = (EntityZombie) (mob); 
+            return !(zombie instanceof EntityZombieVillager) && !zombie.isChild();
+        }
+        if (mob instanceof AbstractSkeleton) {
+            return !(mob instanceof EntityWitherSkeleton);
+        }
+        return mob instanceof EntityPigZombie;
+    }
+
+    private static EntityPlayerMP nearestProgressedPlayer(EntityLiving mob,
+                                                         WorldServer level) {
+        double range = AdaptiveEquipmentRules.OWNER_SEARCH_RANGE;
+        double maxDistanceSqr = range * range;
+        return fr.vanillainstincts.compat.Minecraft112Compat.players(level).stream()
+                .filter(AdaptiveEquipmentProgressionController::combatTarget)
+                .filter(AdaptiveEquipmentProgressionController
+                        ::hasAnyEquipmentAdvancement)
+                .filter(player -> fr.vanillainstincts.compat.Minecraft112Compat.distanceSq(mob, player) <= maxDistanceSqr)
+                .min(Comparator.comparingDouble((value -> fr.vanillainstincts.compat.Minecraft112Compat.distanceSq(mob, value))))
+                .orElse(null);
+    }
+
+    private static boolean hasAnyEquipmentAdvancement(EntityPlayerMP player) {
+        return hasAdvancement(player, SUIT_UP)
+                || hasAdvancement(player, COVER_ME_WITH_DIAMONDS)
+                || hasAdvancement(player, COVER_ME_WITH_DEBRIS);
+    }
+
+    private static boolean hasAdvancement(EntityPlayerMP player,
+                                          ResourceLocation id) {
+        return fr.vanillainstincts.compat.Minecraft112Compat.hasAdvancement(player, id);
+    }
+
+    private static boolean combatTarget(EntityPlayerMP player) {
+        return player != null && player.isEntityAlive()
+                && !player.isCreative() && !player.isSpectator();
+    }
+
+    private static int countLocal(WorldServer level, EntityLiving origin, Tier tier) {
+        double radius = AdaptiveEquipmentRules.LOCAL_VARIANT_RADIUS;
+        return level.getEntitiesWithinAABB(EntityLiving.class,
+                origin.getEntityBoundingBox().grow(radius), candidate ->
+                        tier(candidate) == tier).size();
+    }
+
+    private static ResourceLocation advancement(String path) {
+        return new ResourceLocation("minecraft", path);
+    }
+}

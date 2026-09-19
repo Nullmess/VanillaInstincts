@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:village_construction_rules/village_cap_is_two_golems",
+  "environment": "vanillainstincts:village_construction_rules",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

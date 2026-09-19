@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:world_permission/denied_atomic_placement_changes_nothing",
+  "environment": "vanillainstincts:world_permission",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

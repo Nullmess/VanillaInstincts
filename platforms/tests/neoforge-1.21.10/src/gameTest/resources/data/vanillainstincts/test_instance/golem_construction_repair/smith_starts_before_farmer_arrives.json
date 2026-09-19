@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:golem_construction_repair/smith_starts_before_farmer_arrives",
+  "environment": "vanillainstincts:golem_construction_repair",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

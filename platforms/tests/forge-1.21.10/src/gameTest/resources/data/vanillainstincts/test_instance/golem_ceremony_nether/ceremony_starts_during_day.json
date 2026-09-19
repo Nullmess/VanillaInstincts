@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:golem_ceremony_nether/ceremony_starts_during_day",
+  "environment": "vanillainstincts:golem_ceremony_nether",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

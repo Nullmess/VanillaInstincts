@@ -1,0 +1,23 @@
+{
+  "effect.vanillainstincts.grand_master": "Grand Maître",
+  "ui.vanillainstincts.grand_master.rank": "Grand Maître",
+  "message.vanillainstincts.possession.disabled": "Le contrôle des mobs est désactivé sur ce serveur.",
+  "message.vanillainstincts.possession.spectator_only": "Vous devez être en mode Spectateur pour contrôler un mob.",
+  "message.vanillainstincts.possession.invalid_target": "Cette entité ne peut pas être contrôlée.",
+  "message.vanillainstincts.possession.unsupported_target": "Ce mob vanilla n’est pas dans le catalogue de contrôle.",
+  "message.vanillainstincts.possession.modded_disabled": "Le contrôle des mobs moddées est désactivé sur ce serveur.",
+  "message.vanillainstincts.possession.already_controlled": "Ce mob est déjà contrôlé par un autre spectateur.",
+  "message.vanillainstincts.possession.started": "Vous contrôlez maintenant %s.",
+  "message.vanillainstincts.possession.stopped": "Contrôle du mob arrêté ; retour dans votre joueur en mode Spectateur.",
+  "message.vanillainstincts.possession.invalid_state": "Le contrôle s’arrête car son état n’est plus valide.",
+  "message.vanillainstincts.possession.mob_removed": "Le contrôle s’arrête car le mob a quitté le monde.",
+  "message.vanillainstincts.possession.inventory_disabled": "L’accès à l’inventaire des mobs est désactivé sur ce serveur.",
+  "container.vanillainstincts.mob_inventory": "%s — inventaire du mob",
+  "hud.vanillainstincts.possession.title": "Contrôle : %s",
+  "hud.vanillainstincts.possession.health": "PV : %s/%s  •  Cœurs : %s/%s",
+  "hud.vanillainstincts.possession.status": "Armure : %s  •  Air : %s/%s",
+  "message.vanillainstincts.possession.camera_required": "Entrez d’abord dans un mob avec le mode Spectateur vanilla, puis utilisez /vanillainstincts control.",
+  "hud.vanillainstincts.possession.hint": "/vanillainstincts control ou Spectateur pour quitter • E inventaire",
+  "message.vanillainstincts.possession.already_active": "Vous contrôlez déjà ce mob. Relancez /vanillainstincts control pour le libérer.",
+  "message.vanillainstincts.possession.returned_to_spectator": "Contrôle du mob arrêté car vous êtes repassé en mode Spectateur."
+}

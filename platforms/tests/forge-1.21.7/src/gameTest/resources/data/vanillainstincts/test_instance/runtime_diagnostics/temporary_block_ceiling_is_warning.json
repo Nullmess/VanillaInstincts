@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:runtime_diagnostics/temporary_block_ceiling_is_warning",
+  "environment": "vanillainstincts:runtime_diagnostics",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

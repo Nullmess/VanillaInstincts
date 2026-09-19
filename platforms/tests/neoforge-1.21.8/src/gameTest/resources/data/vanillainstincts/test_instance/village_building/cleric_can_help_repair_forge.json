@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:village_building/cleric_can_help_repair_forge",
+  "environment": "vanillainstincts:village_building",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

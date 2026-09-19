@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:profession_expedition/librarian_shows_crafting_material",
+  "environment": "vanillainstincts:profession_expedition",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

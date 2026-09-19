@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:profession_expedition/generic_professions_have_visual_stock",
+  "environment": "vanillainstincts:profession_expedition",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

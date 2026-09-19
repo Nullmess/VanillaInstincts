@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:village_social_trade/cleric_can_exchange_produced_potions",
+  "environment": "vanillainstincts:village_social_trade",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

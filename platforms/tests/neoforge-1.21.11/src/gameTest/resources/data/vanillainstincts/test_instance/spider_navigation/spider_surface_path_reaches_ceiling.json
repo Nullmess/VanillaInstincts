@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:spider_navigation/spider_surface_path_reaches_ceiling",
+  "environment": "vanillainstincts:spider_navigation",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

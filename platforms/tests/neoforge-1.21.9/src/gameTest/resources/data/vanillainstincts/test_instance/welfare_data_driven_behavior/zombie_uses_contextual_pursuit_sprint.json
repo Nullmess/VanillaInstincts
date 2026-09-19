@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:welfare_data_driven_behavior/zombie_uses_contextual_pursuit_sprint",
+  "environment": "vanillainstincts:welfare_data_driven_behavior",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

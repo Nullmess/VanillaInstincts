@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:storage_network/second_storage_group_uses_opposite_side",
+  "environment": "vanillainstincts:storage_network",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

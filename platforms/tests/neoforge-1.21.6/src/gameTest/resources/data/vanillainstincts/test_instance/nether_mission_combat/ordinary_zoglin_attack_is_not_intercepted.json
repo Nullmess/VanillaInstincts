@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:nether_mission_combat/ordinary_zoglin_attack_is_not_intercepted",
+  "environment": "vanillainstincts:nether_mission_combat",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

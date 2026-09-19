@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:runtime_diagnostics/bounded_log_keeps_newest_entries",
+  "environment": "vanillainstincts:runtime_diagnostics",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

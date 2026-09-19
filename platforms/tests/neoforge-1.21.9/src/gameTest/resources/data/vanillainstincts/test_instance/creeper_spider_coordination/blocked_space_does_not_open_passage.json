@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:creeper_spider_coordination/blocked_space_does_not_open_passage",
+  "environment": "vanillainstincts:creeper_spider_coordination",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

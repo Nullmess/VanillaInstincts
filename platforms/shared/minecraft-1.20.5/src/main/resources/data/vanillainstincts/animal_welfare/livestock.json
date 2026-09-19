@@ -1,0 +1,15 @@
+{
+  "priority": 20,
+  "animals": ["minecraft:cow", "minecraft:sheep", "minecraft:pig", "minecraft:goat"],
+  "needs_shelter": true,
+  "needs_nearby_water": true,
+  "needs_herd": true,
+  "needs_rest": true,
+  "hot_temperature": 1.0,
+  "rest_start": 12000,
+  "rest_end": 23000,
+  "stress_threshold": 58,
+  "recovery_threshold": 74,
+  "recovery_ticks": 360,
+  "breeding_min_score": 52
+}

@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:recovered_trade/cleric_accepts_player_written_book",
+  "environment": "vanillainstincts:recovered_trade",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

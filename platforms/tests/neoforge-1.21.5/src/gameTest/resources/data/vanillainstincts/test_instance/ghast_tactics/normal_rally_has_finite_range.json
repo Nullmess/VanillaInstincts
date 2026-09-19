@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:ghast_tactics/normal_rally_has_finite_range",
+  "environment": "vanillainstincts:ghast_tactics",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

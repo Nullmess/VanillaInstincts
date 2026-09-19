@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:ecology_acquisition_mobility/acquisition_never_targets_through_wall",
+  "environment": "vanillainstincts:ecology_acquisition_mobility",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

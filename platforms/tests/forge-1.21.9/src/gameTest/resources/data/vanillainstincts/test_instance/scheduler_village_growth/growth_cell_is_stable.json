@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:scheduler_village_growth/growth_cell_is_stable",
+  "environment": "vanillainstincts:scheduler_village_growth",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

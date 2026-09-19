@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:village_template_selection/limit_bounds_site_attempts",
+  "environment": "vanillainstincts:village_template_selection",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

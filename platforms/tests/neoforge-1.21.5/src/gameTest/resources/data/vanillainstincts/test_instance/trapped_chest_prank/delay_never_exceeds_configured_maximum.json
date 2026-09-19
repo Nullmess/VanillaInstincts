@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:trapped_chest_prank/delay_never_exceeds_configured_maximum",
+  "environment": "vanillainstincts:trapped_chest_prank",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

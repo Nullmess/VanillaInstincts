@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:profession_expedition/fisherman_can_exchange_catch",
+  "environment": "vanillainstincts:profession_expedition",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

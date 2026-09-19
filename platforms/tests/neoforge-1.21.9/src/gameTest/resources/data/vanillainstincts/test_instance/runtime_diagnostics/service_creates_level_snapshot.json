@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:runtime_diagnostics/service_creates_level_snapshot",
+  "environment": "vanillainstincts:runtime_diagnostics",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

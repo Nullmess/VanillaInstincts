@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:construction_safety_mission/same_origin_keeps_only_best_identity",
+  "environment": "vanillainstincts:construction_safety_mission",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

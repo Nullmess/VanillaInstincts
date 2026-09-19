@@ -1,0 +1,37 @@
+package fr.vanillainstincts;
+
+import fr.vanillainstincts.config.VanillaInstinctsConfigEvents;
+import fr.vanillainstincts.event.LegacyForgeEvents;
+import net.minecraft.util.ResourceLocation;
+import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.fml.common.event.FMLInitializationEvent;
+import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+/** Minecraft 1.8.2 compatibility profile on the official Forge 1.8.8 toolchain. */
+@Mod(modid = VanillaInstincts.MOD_ID, name = "Vanilla Instincts",
+        version = VanillaInstincts.VERSION, acceptedMinecraftVersions = "[1.8.2]")
+public final class VanillaInstincts {
+    public static final String MOD_ID = "vanillainstincts";
+    public static final String VERSION = "1.0.0";
+    public static final String BUILD_ID = "legacy-1.8.2-compat";
+    public static final Logger LOGGER = LogManager.getLogger(MOD_ID);
+
+    @Mod.EventHandler
+    public void preInit(FMLPreInitializationEvent event) {
+        VanillaInstinctsConfigEvents.installDefaults();
+        MinecraftForge.EVENT_BUS.register(new LegacyForgeEvents());
+    }
+
+    @Mod.EventHandler
+    public void init(FMLInitializationEvent event) {
+        LOGGER.info("Vanilla Instincts {} ({}) initialised for Minecraft 1.8.2 compatibility profile (Forge 1.8.8 toolchain)",
+                VERSION, BUILD_ID);
+    }
+
+    public static ResourceLocation id(String path) {
+        return new ResourceLocation(MOD_ID, path);
+    }
+}

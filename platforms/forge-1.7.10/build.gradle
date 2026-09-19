@@ -1,0 +1,85 @@
+buildscript {
+    repositories {
+        mavenCentral()
+        maven { url = 'https://maven.minecraftforge.net/' }
+    }
+    dependencies {
+        // Maintained ForgeGradle 1.2 fork for reconstructing legacy 1.7.10 builds on HTTPS-era repositories.
+        classpath 'com.anatawa12.forge:ForgeGradle:1.2-1.1.0'
+    }
+}
+
+apply plugin: 'forge'
+
+version = '1.0.0'
+group = 'fr.vanillainstincts'
+archivesBaseName = 'vanilla-instincts-forge-mc1.7.10'
+sourceCompatibility = targetCompatibility = '1.8'
+
+def repoRoot = file('../..').canonicalFile
+def familyRoot = new File(repoRoot, 'platforms/shared/minecraft-1.7.10')
+def adapterRoot = new File(repoRoot, 'platforms/adapters/forge/minecraft-1.7.10')
+def coreRoot = new File(repoRoot, 'core-legacy')
+
+minecraft {
+    version = '1.7.10-10.13.4.1614-1.7.10'
+    runDir = 'run'
+    mappings = 'stable_12'
+}
+
+repositories {
+    mavenCentral()
+    maven { url = 'https://maven.minecraftforge.net/' }
+}
+
+dependencies {
+}
+
+sourceSets {
+    main {
+        java.srcDirs = [
+            new File(coreRoot, 'src/main/java'),
+            new File(familyRoot, 'src/main/java'),
+            new File(adapterRoot, 'src/main/java')
+        ]
+        resources.srcDirs = [
+            new File(familyRoot, 'src/main/resources'),
+            new File(adapterRoot, 'src/main/resources')
+        ]
+        // Minecraft 1.7.10 native target on official Forge 10.13.4.1614 / MCP stable_12.
+        java.exclude 'fr/vanillainstincts/client/**'
+        java.exclude 'fr/vanillainstincts/mixin/**'
+        java.exclude 'fr/vanillainstincts/world/NetherEndBedController.java'
+        java.exclude 'fr/vanillainstincts/network/**'
+        java.exclude 'fr/vanillainstincts/possession/**'
+        java.exclude 'fr/vanillainstincts/command/**'
+        java.exclude 'fr/vanillainstincts/village/VillagerGrandMasterProgressDisplay.java'
+        java.exclude 'fr/vanillainstincts/registry/VanillaInstinctsMobEffects.java'
+        java.exclude 'fr/vanillainstincts/ai/PillagerTacticsController.java'
+        java.exclude 'fr/vanillainstincts/ai/PillagerOutpostLootController.java'
+        java.exclude 'fr/vanillainstincts/event/CombatEvents.java'
+        java.exclude 'fr/vanillainstincts/event/CommandEvents.java'
+        java.exclude 'fr/vanillainstincts/event/CreatureLifecycleEvents.java'
+        java.exclude 'fr/vanillainstincts/event/ServerLifecycleEvents.java'
+        java.exclude 'fr/vanillainstincts/event/VanillaInstinctsEventRegistrar.java'
+        java.exclude 'fr/vanillainstincts/event/VillageInteractionEvents.java'
+        java.exclude 'fr/vanillainstincts/event/WorldInteractionEvents.java'
+    }
+}
+
+tasks.withType(JavaCompile) {
+    options.encoding = 'UTF-8'
+}
+
+jar {
+    manifest {
+        attributes([
+            'Specification-Title': 'Vanilla Instincts',
+            'Specification-Vendor': 'Vanilla Instincts',
+            'Specification-Version': '1.0.0',
+            'Implementation-Title': 'Vanilla Instincts',
+            'Implementation-Version': '1.0.0',
+            'Implementation-Vendor': 'Vanilla Instincts'
+        ])
+    }
+}

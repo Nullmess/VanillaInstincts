@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:scheduler_village_growth/cooldown_blocks_replacement",
+  "environment": "vanillainstincts:scheduler_village_growth",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:world_permission/block_entity_is_protected",
+  "environment": "vanillainstincts:world_permission",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

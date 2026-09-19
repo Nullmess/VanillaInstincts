@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:village_template_selection/unused_templates_come_first",
+  "environment": "vanillainstincts:village_template_selection",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

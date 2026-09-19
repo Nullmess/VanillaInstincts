@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:scheduler_village_growth/small_village_needs_no_golem",
+  "environment": "vanillainstincts:scheduler_village_growth",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

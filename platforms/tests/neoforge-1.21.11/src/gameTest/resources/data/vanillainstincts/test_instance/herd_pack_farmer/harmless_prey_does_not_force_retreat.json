@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:herd_pack_farmer/harmless_prey_does_not_force_retreat",
+  "environment": "vanillainstincts:herd_pack_farmer",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

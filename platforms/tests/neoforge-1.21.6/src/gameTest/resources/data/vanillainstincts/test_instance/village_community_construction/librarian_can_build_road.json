@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:village_community_construction/librarian_can_build_road",
+  "environment": "vanillainstincts:village_community_construction",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

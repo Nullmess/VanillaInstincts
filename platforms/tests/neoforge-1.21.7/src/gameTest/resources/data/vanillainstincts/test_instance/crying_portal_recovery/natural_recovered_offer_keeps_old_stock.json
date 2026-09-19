@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:crying_portal_recovery/natural_recovered_offer_keeps_old_stock",
+  "environment": "vanillainstincts:crying_portal_recovery",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

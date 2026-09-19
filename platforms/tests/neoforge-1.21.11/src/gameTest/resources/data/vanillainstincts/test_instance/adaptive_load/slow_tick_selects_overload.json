@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:adaptive_load/slow_tick_selects_overload",
+  "environment": "vanillainstincts:adaptive_load",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

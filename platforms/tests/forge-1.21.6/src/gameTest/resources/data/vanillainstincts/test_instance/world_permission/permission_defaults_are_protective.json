@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:world_permission/permission_defaults_are_protective",
+  "environment": "vanillainstincts:world_permission",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

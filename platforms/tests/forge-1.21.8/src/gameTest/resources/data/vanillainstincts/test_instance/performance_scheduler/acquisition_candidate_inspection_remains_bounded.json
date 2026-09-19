@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:performance_scheduler/acquisition_candidate_inspection_remains_bounded",
+  "environment": "vanillainstincts:performance_scheduler",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

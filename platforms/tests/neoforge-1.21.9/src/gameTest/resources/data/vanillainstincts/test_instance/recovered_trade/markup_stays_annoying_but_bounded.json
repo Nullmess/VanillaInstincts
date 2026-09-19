@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:recovered_trade/markup_stays_annoying_but_bounded",
+  "environment": "vanillainstincts:recovered_trade",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:enderman_cargo/item_entity_is_valid_cargo_type",
+  "environment": "vanillainstincts:enderman_cargo",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

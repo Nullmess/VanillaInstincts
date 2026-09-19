@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:creeper_spider_tactics/spider_aim_leads_moving_target",
+  "environment": "vanillainstincts:creeper_spider_tactics",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

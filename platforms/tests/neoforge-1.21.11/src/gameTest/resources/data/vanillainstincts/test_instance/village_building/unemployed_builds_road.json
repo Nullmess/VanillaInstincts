@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:village_building/unemployed_builds_road",
+  "environment": "vanillainstincts:village_building",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

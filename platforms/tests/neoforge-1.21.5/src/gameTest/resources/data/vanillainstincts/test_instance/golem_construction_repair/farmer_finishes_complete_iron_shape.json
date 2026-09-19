@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:golem_construction_repair/farmer_finishes_complete_iron_shape",
+  "environment": "vanillainstincts:golem_construction_repair",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:scheduler_village_growth/steep_site_is_rejected",
+  "environment": "vanillainstincts:scheduler_village_growth",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

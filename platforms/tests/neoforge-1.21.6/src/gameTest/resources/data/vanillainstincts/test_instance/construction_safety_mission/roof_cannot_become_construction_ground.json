@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:construction_safety_mission/roof_cannot_become_construction_ground",
+  "environment": "vanillainstincts:construction_safety_mission",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

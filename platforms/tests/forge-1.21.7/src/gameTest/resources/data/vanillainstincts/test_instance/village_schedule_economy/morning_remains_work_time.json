@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:village_schedule_economy/morning_remains_work_time",
+  "environment": "vanillainstincts:village_schedule_economy",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:ghast_tactics/easy_volley_is_rare",
+  "environment": "vanillainstincts:ghast_tactics",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

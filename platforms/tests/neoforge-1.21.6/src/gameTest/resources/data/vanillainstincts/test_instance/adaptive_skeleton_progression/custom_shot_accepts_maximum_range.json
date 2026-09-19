@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:adaptive_skeleton_progression/custom_shot_accepts_maximum_range",
+  "environment": "vanillainstincts:adaptive_skeleton_progression",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

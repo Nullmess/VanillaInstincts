@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:village_crafting_market/every_recipe_consumes_materials",
+  "environment": "vanillainstincts:village_crafting_market",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

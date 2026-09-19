@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:construction_safety_mission/road_cannot_replace_stone_foundation",
+  "environment": "vanillainstincts:construction_safety_mission",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

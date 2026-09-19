@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:village_production_evolution/armorer_produces_several_item_families",
+  "environment": "vanillainstincts:village_production_evolution",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

@@ -1,0 +1,413 @@
+package fr.vanillainstincts.ai;
+
+import fr.vanillainstincts.core.model.StimulusType;
+import fr.vanillainstincts.core.rules.PerceptionRules;
+import fr.vanillainstincts.core.rules.PerformanceRules;
+import fr.vanillainstincts.data.PerceptionProfileManager;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.monster.Monster;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
+
+/**
+ * Persistent sensory memory used by tactical creatures.
+ *
+ * <p>Perception 3.0 keeps the original fairness rule: exact visual memory is
+ * written only after a real line-of-sight check. Hearing stores the position
+ * of a sound event, never the hidden target itself. Ranges and memory durations
+ * are data-driven through {@code perception_profiles} datapack files.</p>
+ */
+public final class MobPerceptionMemory {
+    private static final String SEEN_POS = "vanillainstincts_last_seen_pos";
+    private static final String SEEN_UNTIL = "vanillainstincts_last_seen_until";
+    private static final String SEEN_TARGET = "vanillainstincts_last_seen_target";
+    private static final String HEARD_POS = "vanillainstincts_last_heard_pos";
+    private static final String HEARD_UNTIL = "vanillainstincts_last_heard_until";
+    private static final String INTEREST_POS = "vanillainstincts_interest_pos";
+    private static final String INTEREST_UNTIL = "vanillainstincts_interest_until";
+    private static final String INTEREST_TYPE = "vanillainstincts_interest_type";
+    private static final String INTEREST_CONFIDENCE = "vanillainstincts_interest_confidence";
+
+    private MobPerceptionMemory() {
+    }
+
+    public static void observe(Mob mob, ServerLevel level, long gameTime) {
+        if (mob == null || level == null) return;
+        expire(mob, gameTime);
+        LivingEntity target = mob.getTarget();
+        if (!validTarget(target)) return;
+        if (!VanillaInstinctsScheduler.isScheduled(mob,
+                PerceptionRules.OBSERVATION_INTERVAL_TICKS)
+                || !VanillaInstinctsScheduler.claim(level, mob,
+                PerformanceRules.ENTITY_SCAN_COST)) {
+            return;
+        }
+        if (!canSee(mob, target)) return;
+        rememberSeen(mob, target.blockPosition(), target.getUUID(), gameTime,
+                PerceptionProfileManager.seenMemoryTicks(mob));
+    }
+
+    public static boolean canSee(Mob mob, LivingEntity target) {
+        if (mob == null || !validTarget(target)) return false;
+        if (!(mob.level() instanceof ServerLevel level)) {
+            if (mob.hasEffect(MobEffects.BLINDNESS)
+                    && mob.distanceToSqr(target)
+                    > PerceptionRules.BLINDNESS_VISUAL_RANGE
+                    * PerceptionRules.BLINDNESS_VISUAL_RANGE) {
+                return false;
+            }
+            return mob.hasLineOfSight(target);
+        }
+
+        double range = mob.hasEffect(MobEffects.BLINDNESS)
+                ? PerceptionProfileManager.blindnessRange(mob)
+                : PerceptionProfileManager.visualRange(mob, target, level);
+        if (mob.distanceToSqr(target) > range * range) return false;
+        // Never grant x-ray vision: every visual observation still requires
+        // Minecraft's normal line-of-sight test.
+        return mob.hasLineOfSight(target);
+    }
+
+    public static void rememberSeen(Mob mob, BlockPos position, UUID target,
+                                    long gameTime, int durationTicks) {
+        if (mob == null || position == null) return;
+        mob.getPersistentData().putLong(SEEN_POS, position.asLong());
+        mob.getPersistentData().putLong(SEEN_UNTIL,
+                Math.max(0L, gameTime) + Math.max(1, durationTicks));
+        if (target != null) {
+            fr.vanillainstincts.persistence.NbtCompat.putUuid(mob.getPersistentData(), SEEN_TARGET, target);
+        } else {
+            mob.getPersistentData().remove(SEEN_TARGET);
+        }
+    }
+
+    public static void rememberHeard(Mob mob, BlockPos position,
+                                     long gameTime, int durationTicks) {
+        if (mob == null || position == null) return;
+        // Fresh visual information is intentionally stronger than a noise.
+        if (hasFreshSeen(mob, gameTime)) return;
+        mob.getPersistentData().putLong(HEARD_POS, position.asLong());
+        mob.getPersistentData().putLong(HEARD_UNTIL,
+                Math.max(0L, gameTime) + Math.max(1, durationTicks));
+    }
+
+    /**
+     * Stores a non-magical point of interest. The record contains no target
+     * UUID, so a sound or impact behind a wall can guide investigation without
+     * revealing who caused it.
+     */
+    public static void rememberInterest(Mob mob, BlockPos position,
+                                        StimulusType type, long gameTime,
+                                        int durationTicks, double confidence) {
+        if (mob == null || position == null || type == null) return;
+        mob.getPersistentData().putLong(INTEREST_POS, position.asLong());
+        mob.getPersistentData().putLong(INTEREST_UNTIL,
+                Math.max(0L, gameTime) + Math.max(1, durationTicks));
+        mob.getPersistentData().putString(INTEREST_TYPE, type.name());
+        mob.getPersistentData().putDouble(INTEREST_CONFIDENCE,
+                Math.max(0.0D, Math.min(1.0D, confidence)));
+    }
+
+    public static Optional<StimulusType> lastStimulusType(Mob mob,
+                                                          long gameTime) {
+        if (mob == null || !hasFreshInterest(mob, gameTime)) {
+            return Optional.empty();
+        }
+        String raw = fr.vanillainstincts.persistence.NbtCompat.getString(mob.getPersistentData(), INTEREST_TYPE);
+        try {
+            return Optional.of(StimulusType.valueOf(raw));
+        } catch (IllegalArgumentException exception) {
+            return Optional.empty();
+        }
+    }
+
+    public static double interestConfidence(Mob mob, long gameTime) {
+        if (mob == null || !hasFreshInterest(mob, gameTime)) return 0.0D;
+        return Math.max(0.0D, Math.min(1.0D,
+                fr.vanillainstincts.persistence.NbtCompat.getDouble(mob.getPersistentData(), INTEREST_CONFIDENCE)));
+    }
+
+    public static boolean hasFreshInterest(Mob mob, long gameTime) {
+        return mob != null && gameTime < fr.vanillainstincts.persistence.NbtCompat.getLong(mob.getPersistentData(), INTEREST_UNTIL);
+    }
+
+    public static Optional<Vec3> bestKnownPosition(Mob mob, long gameTime) {
+        if (mob == null) return Optional.empty();
+        expire(mob, gameTime);
+        if (hasFreshSeen(mob, gameTime)
+                && mob.getPersistentData().contains(SEEN_POS)) {
+            return Optional.of(Vec3.atBottomCenterOf(BlockPos.of(
+                    fr.vanillainstincts.persistence.NbtCompat.getLong(mob.getPersistentData(), SEEN_POS))));
+        }
+        if (hasFreshHeard(mob, gameTime)
+                && mob.getPersistentData().contains(HEARD_POS)) {
+            return Optional.of(Vec3.atBottomCenterOf(BlockPos.of(
+                    fr.vanillainstincts.persistence.NbtCompat.getLong(mob.getPersistentData(), HEARD_POS))));
+        }
+        if (hasFreshInterest(mob, gameTime)
+                && mob.getPersistentData().contains(INTEREST_POS)) {
+            return Optional.of(Vec3.atBottomCenterOf(BlockPos.of(
+                    fr.vanillainstincts.persistence.NbtCompat.getLong(mob.getPersistentData(), INTEREST_POS))));
+        }
+        return Optional.empty();
+    }
+
+    public static Optional<UUID> lastSeenTarget(Mob mob, long gameTime) {
+        if (mob == null || !hasFreshSeen(mob, gameTime)
+                || !fr.vanillainstincts.persistence.NbtCompat.hasUuid(mob.getPersistentData(), SEEN_TARGET)) {
+            return Optional.empty();
+        }
+        return Optional.of(fr.vanillainstincts.persistence.NbtCompat.getUuid(mob.getPersistentData(), SEEN_TARGET));
+    }
+
+    public static boolean hasFreshSeen(Mob mob, long gameTime) {
+        return mob != null && gameTime < fr.vanillainstincts.persistence.NbtCompat.getLong(mob.getPersistentData(), SEEN_UNTIL);
+    }
+
+    public static boolean hasFreshHeard(Mob mob, long gameTime) {
+        return mob != null && gameTime < fr.vanillainstincts.persistence.NbtCompat.getLong(mob.getPersistentData(), HEARD_UNTIL);
+    }
+
+    /**
+     * Broadcasts a noise with an explicit memory lifetime.
+     *
+     * <p>This is the backwards-compatible contract used by callers that need
+     * deterministic timing (including existing GameTests): {@code durationTicks}
+     * is the actual requested lifetime and is never stretched by a perception
+     * profile. Hearing range is still profile-aware.</p>
+     */
+    public static void broadcastNoise(ServerLevel level, BlockPos position,
+                                      double radius, int durationTicks) {
+        broadcastNoise(level, position, radius, durationTicks, null);
+    }
+
+    /** Same exact-duration contract as the source-less overload. */
+    public static void broadcastNoise(ServerLevel level, BlockPos position,
+                                      double radius, int durationTicks,
+                                      LivingEntity noiseSource) {
+        broadcastNoiseInternal(level, position, radius, durationTicks,
+                noiseSource, HearingMemoryMode.EXACT, StimulusType.SOUND,
+                0.70D, StimulusAudience.MONSTERS);
+    }
+
+    /**
+     * Broadcasts a gameplay noise whose memory lifetime is scaled by each
+     * observer's Perception 2.0 profile.
+     *
+     * <p>This compatibility API keeps profile-scaled untyped hearing available
+     * for direct callers. fixed47 production events use the typed stimulus bus,
+     * while the long-standing {@link #broadcastNoise} duration contract remains
+     * exact.</p>
+     */
+    public static void broadcastProfiledNoise(ServerLevel level,
+                                              BlockPos position,
+                                              double radius,
+                                              int baseDurationTicks,
+                                              LivingEntity noiseSource) {
+        broadcastNoiseInternal(level, position, radius, baseDurationTicks,
+                noiseSource, HearingMemoryMode.PROFILE_SCALED,
+                StimulusType.SOUND, 0.70D, StimulusAudience.MONSTERS);
+    }
+
+    /**
+     * Profile-aware typed stimulus used by Intelligence Core 3.0. Hearing keeps
+     * the normal bounded positional uncertainty; the stimulus type adds context
+     * but never stores a hidden source UUID.
+     */
+    public static void broadcastProfiledStimulus(ServerLevel level,
+                                                 BlockPos position,
+                                                 double radius,
+                                                 int baseDurationTicks,
+                                                 LivingEntity noiseSource,
+                                                 StimulusType type,
+                                                 double confidence) {
+        broadcastNoiseInternal(level, position, radius, baseDurationTicks,
+                noiseSource, HearingMemoryMode.PROFILE_SCALED,
+                type == null ? StimulusType.SOUND : type,
+                Math.max(0.0D, Math.min(1.0D, confidence)),
+                StimulusAudience.ALL_MOBS);
+    }
+
+    /**
+     * Deterministic single-observer form used by event bridges and GameTests.
+     * Scheduler admission belongs to the broadcast loop, not to sensory math,
+     * so this method can be tested without depending on unrelated server load.
+     */
+    public static boolean perceiveProfiledStimulus(Mob observer,
+                                                    ServerLevel level,
+                                                    BlockPos position,
+                                                    double radius,
+                                                    int baseDurationTicks,
+                                                    LivingEntity noiseSource,
+                                                    StimulusType type,
+                                                    double confidence) {
+        return perceiveStimulus(observer, level, position, radius,
+                baseDurationTicks, noiseSource,
+                HearingMemoryMode.PROFILE_SCALED,
+                type == null ? StimulusType.SOUND : type,
+                Math.max(0.0D, Math.min(1.0D, confidence)));
+    }
+
+    private static void broadcastNoiseInternal(ServerLevel level,
+                                               BlockPos position,
+                                               double radius,
+                                               int durationTicks,
+                                               LivingEntity noiseSource,
+                                               HearingMemoryMode memoryMode,
+                                               StimulusType stimulusType,
+                                               double confidence,
+                                               StimulusAudience audience) {
+        if (level == null || position == null || radius <= 0.0D) return;
+        double scanRadius = PerceptionProfileManager.maximumNoiseScanRadius(
+                radius);
+        AABB area = new AABB(position).inflate(scanRadius);
+        Vec3 center = Vec3.atCenterOf(position);
+        List<Mob> observers = new ArrayList<>();
+        if (audience == StimulusAudience.ALL_MOBS) {
+            observers.addAll(level.getEntitiesOfClass(Mob.class, area,
+                    LivingEntity::isAlive));
+        } else {
+            observers.addAll(level.getEntitiesOfClass(Monster.class, area,
+                    LivingEntity::isAlive));
+        }
+        int limit = audience == StimulusAudience.ALL_MOBS
+                ? VanillaInstinctsScheduler.precisionLimit(level,
+                PerceptionRules.MAX_STIMULUS_OBSERVERS,
+                PerceptionRules.MIN_STIMULUS_OBSERVERS_UNDER_LOAD)
+                : observers.size();
+        // Sorting is only useful when adaptive precision will actually drop
+        // observers. The normal all-observer path avoids an O(n log n) sort.
+        if (limit < observers.size()) {
+            observers.sort(Comparator.comparingDouble(mob ->
+                    mob.distanceToSqr(center)));
+        }
+        int inspected = 0;
+        for (Mob observer : observers) {
+            if (inspected++ >= limit) break;
+            if (!VanillaInstinctsScheduler.claim(level, observer, 1)) continue;
+            perceiveStimulus(observer, level, position, radius, durationTicks,
+                    noiseSource, memoryMode, stimulusType, confidence);
+        }
+    }
+
+    private static boolean perceiveStimulus(Mob observer, ServerLevel level,
+                                             BlockPos position, double radius,
+                                             int durationTicks,
+                                             LivingEntity noiseSource,
+                                             HearingMemoryMode memoryMode,
+                                             StimulusType stimulusType,
+                                             double confidence) {
+        if (observer == null || level == null || position == null
+                || !observer.isAlive() || radius <= 0.0D) {
+            return false;
+        }
+        Vec3 center = Vec3.atCenterOf(position);
+        double hearingRadius = PerceptionProfileManager.hearingRadius(
+                observer, level, radius, noiseSource);
+        if (observer.distanceToSqr(center) > hearingRadius * hearingRadius) {
+            return false;
+        }
+        int dx = Math.floorMod(observer.getId(), 3) - 1;
+        int dz = Math.floorMod(observer.getId() / 3, 3) - 1;
+        int memoryTicks = memoryMode == HearingMemoryMode.PROFILE_SCALED
+                ? scaledHearingMemory(observer, durationTicks)
+                : Math.max(1, durationTicks);
+        BlockPos perceived = position.offset(dx, 0, dz);
+        long gameTime = level.getGameTime();
+        rememberHeard(observer, perceived, gameTime, memoryTicks);
+        rememberInterest(observer, perceived, stimulusType, gameTime,
+                memoryTicks, confidence);
+        return true;
+    }
+
+    /** Shares only already-known sensory information between nearby allies. */
+    public static <T extends Mob> void shareWithNearbySameType(
+            T source, ServerLevel level, double radius, long gameTime) {
+        if (source == null || level == null || radius <= 0.0D) return;
+        Optional<Vec3> known = bestKnownPosition(source, gameTime);
+        if (known.isEmpty()) return;
+        BlockPos position = BlockPos.containing(known.get());
+        UUID target = lastSeenTarget(source, gameTime).orElse(null);
+        for (Mob ally : level.getEntitiesOfClass(Mob.class,
+                source.getBoundingBox().inflate(radius), other ->
+                        other != source && other.isAlive()
+                                && other.getType() == source.getType())) {
+            if (target != null && hasFreshSeen(source, gameTime)) {
+                rememberSeen(ally, position, target, gameTime,
+                        PerceptionProfileManager.seenMemoryTicks(ally));
+                rememberInterest(ally, position, StimulusType.ALLY_ALERT,
+                        gameTime, PerceptionProfileManager.seenMemoryTicks(ally),
+                        0.90D);
+            } else {
+                int memoryTicks = PerceptionProfileManager.heardMemoryTicks(ally);
+                rememberHeard(ally, position, gameTime, memoryTicks);
+                rememberInterest(ally, position, StimulusType.ALLY_ALERT,
+                        gameTime, memoryTicks, 0.78D);
+            }
+        }
+    }
+
+    public static void clear(Mob mob) {
+        if (mob == null) return;
+        mob.getPersistentData().remove(SEEN_POS);
+        mob.getPersistentData().remove(SEEN_UNTIL);
+        mob.getPersistentData().remove(SEEN_TARGET);
+        mob.getPersistentData().remove(HEARD_POS);
+        mob.getPersistentData().remove(HEARD_UNTIL);
+        mob.getPersistentData().remove(INTEREST_POS);
+        mob.getPersistentData().remove(INTEREST_UNTIL);
+        mob.getPersistentData().remove(INTEREST_TYPE);
+        mob.getPersistentData().remove(INTEREST_CONFIDENCE);
+    }
+
+    private static int scaledHearingMemory(Mob mob, int requestedTicks) {
+        double factor = PerceptionProfileManager.heardMemoryTicks(mob)
+                / (double) PerceptionRules.LAST_HEARD_MEMORY_TICKS;
+        return Math.max(1, (int) Math.round(Math.max(1, requestedTicks)
+                * factor));
+    }
+
+    private static void expire(Mob mob, long gameTime) {
+        if (gameTime >= fr.vanillainstincts.persistence.NbtCompat.getLong(mob.getPersistentData(), SEEN_UNTIL)) {
+            mob.getPersistentData().remove(SEEN_POS);
+            mob.getPersistentData().remove(SEEN_UNTIL);
+            mob.getPersistentData().remove(SEEN_TARGET);
+        }
+        if (gameTime >= fr.vanillainstincts.persistence.NbtCompat.getLong(mob.getPersistentData(), HEARD_UNTIL)) {
+            mob.getPersistentData().remove(HEARD_POS);
+            mob.getPersistentData().remove(HEARD_UNTIL);
+        }
+        if (gameTime >= fr.vanillainstincts.persistence.NbtCompat.getLong(mob.getPersistentData(), INTEREST_UNTIL)) {
+            mob.getPersistentData().remove(INTEREST_POS);
+            mob.getPersistentData().remove(INTEREST_UNTIL);
+            mob.getPersistentData().remove(INTEREST_TYPE);
+            mob.getPersistentData().remove(INTEREST_CONFIDENCE);
+        }
+    }
+
+    private enum HearingMemoryMode {
+        EXACT,
+        PROFILE_SCALED
+    }
+
+    private enum StimulusAudience {
+        MONSTERS,
+        ALL_MOBS
+    }
+
+    private static boolean validTarget(LivingEntity target) {
+        if (target == null || !target.isAlive()) return false;
+        return !(target instanceof Player player)
+                || !player.isCreative() && !player.isSpectator();
+    }
+}

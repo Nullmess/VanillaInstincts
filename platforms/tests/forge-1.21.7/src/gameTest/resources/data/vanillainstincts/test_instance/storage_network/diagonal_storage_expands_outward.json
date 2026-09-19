@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:storage_network/diagonal_storage_expands_outward",
+  "environment": "vanillainstincts:storage_network",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

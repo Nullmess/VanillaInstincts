@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:door_learning/ordinary_block_cannot_teach_door",
+  "environment": "vanillainstincts:door_learning",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

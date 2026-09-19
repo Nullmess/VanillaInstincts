@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:ecology_acquisition_mobility/acquisition_does_not_replace_live_vanilla_target",
+  "environment": "vanillainstincts:ecology_acquisition_mobility",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:runtime_diagnostics/healthy_snapshot_is_healthy",
+  "environment": "vanillainstincts:runtime_diagnostics",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

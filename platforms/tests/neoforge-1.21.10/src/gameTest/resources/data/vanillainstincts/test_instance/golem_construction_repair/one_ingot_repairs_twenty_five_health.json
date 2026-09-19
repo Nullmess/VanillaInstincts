@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:golem_construction_repair/one_ingot_repairs_twenty_five_health",
+  "environment": "vanillainstincts:golem_construction_repair",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

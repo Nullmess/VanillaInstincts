@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:ecology_acquisition_mobility/mob_relations_load_from_datapack",
+  "environment": "vanillainstincts:ecology_acquisition_mobility",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

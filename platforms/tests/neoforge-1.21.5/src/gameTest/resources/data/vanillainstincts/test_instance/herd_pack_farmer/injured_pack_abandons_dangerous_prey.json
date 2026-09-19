@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:herd_pack_farmer/injured_pack_abandons_dangerous_prey",
+  "environment": "vanillainstincts:herd_pack_farmer",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

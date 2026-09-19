@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:persistence_migration/reads_legacy_version_key",
+  "environment": "vanillainstincts:persistence_migration",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

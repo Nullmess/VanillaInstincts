@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:trapped_chest_prank/variants_use_different_sound_categories",
+  "environment": "vanillainstincts:trapped_chest_prank",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:herd_pack_farmer/common_flee_moves_away_from_danger",
+  "environment": "vanillainstincts:herd_pack_farmer",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

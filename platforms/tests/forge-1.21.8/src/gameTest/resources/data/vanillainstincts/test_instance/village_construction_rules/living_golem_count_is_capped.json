@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:village_construction_rules/living_golem_count_is_capped",
+  "environment": "vanillainstincts:village_construction_rules",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

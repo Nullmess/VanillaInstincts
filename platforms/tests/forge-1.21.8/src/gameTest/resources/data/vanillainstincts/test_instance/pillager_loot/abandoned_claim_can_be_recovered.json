@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:pillager_loot/abandoned_claim_can_be_recovered",
+  "environment": "vanillainstincts:pillager_loot",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

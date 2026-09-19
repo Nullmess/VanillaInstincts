@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:enderman_cargo/healthy_zombie_becomes_monster_delivery",
+  "environment": "vanillainstincts:enderman_cargo",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:nether_reinforcement/reinforcement_state_survives_reload",
+  "environment": "vanillainstincts:nether_reinforcement",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

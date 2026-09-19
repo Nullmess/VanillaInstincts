@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:crying_portal_network/relinking_source_does_not_duplicate_record",
+  "environment": "vanillainstincts:crying_portal_network",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

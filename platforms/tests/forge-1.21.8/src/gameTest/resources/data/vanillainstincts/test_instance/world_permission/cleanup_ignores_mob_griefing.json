@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:world_permission/cleanup_ignores_mob_griefing",
+  "environment": "vanillainstincts:world_permission",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

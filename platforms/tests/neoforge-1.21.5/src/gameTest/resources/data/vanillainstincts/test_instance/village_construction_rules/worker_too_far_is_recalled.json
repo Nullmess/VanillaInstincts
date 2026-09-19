@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:village_construction_rules/worker_too_far_is_recalled",
+  "environment": "vanillainstincts:village_construction_rules",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

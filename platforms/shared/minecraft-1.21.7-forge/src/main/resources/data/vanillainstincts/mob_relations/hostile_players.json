@@ -1,0 +1,24 @@
+{
+  "priority": 100,
+  "observers": [
+    "minecraft:zombie",
+    "minecraft:husk",
+    "minecraft:drowned",
+    "minecraft:skeleton",
+    "minecraft:stray",
+    "minecraft:bogged",
+    "minecraft:creeper",
+    "minecraft:spider",
+    "minecraft:cave_spider",
+    "minecraft:pillager",
+    "minecraft:vindicator",
+    "minecraft:evoker",
+    "minecraft:witch",
+    "minecraft:ravager"
+  ],
+  "targets": "minecraft:player",
+  "relation": "HUNT",
+  "max_distance": 40.0,
+  "requires_line_of_sight": true,
+  "weight": 1.0
+}

@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:crying_portal_recovery/breaking_crying_frame_collapses_whole_portal",
+  "environment": "vanillainstincts:crying_portal_recovery",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:animal_zombie_skeleton_tactics/animal_comfort_storm_prefers_roof",
+  "environment": "vanillainstincts:animal_zombie_skeleton_tactics",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

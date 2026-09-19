@@ -1,0 +1,12 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "fr.vanillainstincts.testcompat.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "Forge1215GameTestMainMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

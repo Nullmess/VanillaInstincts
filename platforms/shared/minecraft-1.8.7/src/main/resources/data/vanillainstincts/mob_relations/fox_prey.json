@@ -1,0 +1,9 @@
+{
+  "priority": 65,
+  "observers": "minecraft:fox",
+  "targets": ["minecraft:rabbit", "minecraft:chicken"],
+  "relation": "HUNT",
+  "max_distance": 16.0,
+  "requires_line_of_sight": true,
+  "weight": 0.8
+}

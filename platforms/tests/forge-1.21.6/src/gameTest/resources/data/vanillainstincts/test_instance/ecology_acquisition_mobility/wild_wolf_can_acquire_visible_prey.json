@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:ecology_acquisition_mobility/wild_wolf_can_acquire_visible_prey",
+  "environment": "vanillainstincts:ecology_acquisition_mobility",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

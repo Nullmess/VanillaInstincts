@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:ecology_acquisition_mobility/generic_mobility_does_not_jump_normal_ground",
+  "environment": "vanillainstincts:ecology_acquisition_mobility",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:golem_ceremony_nether/pig_detects_portal_farther",
+  "environment": "vanillainstincts:golem_ceremony_nether",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:profession_stock/bow_uses_string_repair",
+  "environment": "vanillainstincts:profession_stock",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

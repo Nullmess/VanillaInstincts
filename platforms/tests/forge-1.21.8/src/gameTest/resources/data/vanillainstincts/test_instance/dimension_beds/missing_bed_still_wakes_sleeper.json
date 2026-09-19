@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:dimension_beds/missing_bed_still_wakes_sleeper",
+  "environment": "vanillainstincts:dimension_beds",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

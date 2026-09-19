@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:spider_navigation/spider_surface_navigator_activates_and_cancels",
+  "environment": "vanillainstincts:spider_navigation",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

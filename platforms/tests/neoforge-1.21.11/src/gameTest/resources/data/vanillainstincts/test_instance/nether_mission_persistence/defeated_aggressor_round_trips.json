@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:nether_mission_persistence/defeated_aggressor_round_trips",
+  "environment": "vanillainstincts:nether_mission_persistence",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

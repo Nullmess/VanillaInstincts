@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:enderman_cargo/creeper_becomes_direct_delivery",
+  "environment": "vanillainstincts:enderman_cargo",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

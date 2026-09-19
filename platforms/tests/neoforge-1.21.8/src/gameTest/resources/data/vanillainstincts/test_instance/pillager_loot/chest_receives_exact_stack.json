@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:pillager_loot/chest_receives_exact_stack",
+  "environment": "vanillainstincts:pillager_loot",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

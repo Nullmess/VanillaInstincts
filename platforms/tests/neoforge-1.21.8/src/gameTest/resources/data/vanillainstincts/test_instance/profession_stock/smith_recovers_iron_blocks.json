@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:profession_stock/smith_recovers_iron_blocks",
+  "environment": "vanillainstincts:profession_stock",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

@@ -1,0 +1,28 @@
+plugins {
+    id 'java-library'
+    id 'maven-publish'
+    id 'net.minecraftforge.gradle' version '7.0.34'
+}
+
+// ForgeGradle 7.0.x still defaults to Minecraft Mavenizer 0.5.19.
+// Forge 1.21.11 needs the newer Mavenizer/JavaProvisioner path on Alpine,
+// otherwise srg2names falls back to Disco and cannot provision JDK 8.
+//
+// FG7 also declares SlimeLauncher 0.2.2 as a Java 8 tool. Its task type
+// resolves that launcher inside the task constructor, before normal task
+// configureEach hooks can replace it. Override the tool definition itself so
+// SlimeLauncher is born with Java 21, which is the runtime required by 1.21.11.
+def slimeLauncherJava21 = javaToolchains.launcherFor {
+    languageVersion = JavaLanguageVersion.of(21)
+}
+
+fgtools {
+    configure('mavenizer') {
+        version = '0.5.20'
+    }
+    configure('slimelauncher') {
+        javaLauncher.set(slimeLauncherJava21)
+    }
+}
+
+apply from: rootProject.file('gradle/forge-platform.gradle')

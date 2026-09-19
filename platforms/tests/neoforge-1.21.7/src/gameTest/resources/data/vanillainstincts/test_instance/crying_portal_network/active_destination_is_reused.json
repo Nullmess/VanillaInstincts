@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:crying_portal_network/active_destination_is_reused",
+  "environment": "vanillainstincts:crying_portal_network",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:village_building/house_wall_is_not_road",
+  "environment": "vanillainstincts:village_building",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

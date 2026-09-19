@@ -1,0 +1,17 @@
+{
+  "priority": 110,
+  "entities": ["minecraft:pillager"],
+  "visual_range": 46.0,
+  "hearing_multiplier": 1.05,
+  "night_visual_multiplier": 1.0,
+  "rain_visual_multiplier": 0.82,
+  "sneaking_visual_multiplier": 0.66,
+  "invisible_visual_multiplier": 0.45,
+  "blindness_range": 4.0,
+  "sneaking_hearing_multiplier": 0.68,
+  "easy_multiplier": 0.90,
+  "normal_multiplier": 1.0,
+  "hard_multiplier": 1.15,
+  "last_seen_ticks": 170,
+  "last_heard_ticks": 110
+}

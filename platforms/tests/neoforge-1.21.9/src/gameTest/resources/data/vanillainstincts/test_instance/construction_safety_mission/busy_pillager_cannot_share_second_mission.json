@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:construction_safety_mission/busy_pillager_cannot_share_second_mission",
+  "environment": "vanillainstincts:construction_safety_mission",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

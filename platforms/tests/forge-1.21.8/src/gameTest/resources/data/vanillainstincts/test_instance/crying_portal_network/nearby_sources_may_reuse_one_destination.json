@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:crying_portal_network/nearby_sources_may_reuse_one_destination",
+  "environment": "vanillainstincts:crying_portal_network",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

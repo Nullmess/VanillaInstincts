@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:nether_mission_persistence/portal_failure_falls_back_at_deadline",
+  "environment": "vanillainstincts:nether_mission_persistence",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

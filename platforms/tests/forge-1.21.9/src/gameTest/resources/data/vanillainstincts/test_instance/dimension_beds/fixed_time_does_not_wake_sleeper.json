@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:dimension_beds/fixed_time_does_not_wake_sleeper",
+  "environment": "vanillainstincts:dimension_beds",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

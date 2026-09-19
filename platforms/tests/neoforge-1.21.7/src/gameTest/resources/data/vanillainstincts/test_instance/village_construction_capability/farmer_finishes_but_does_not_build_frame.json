@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:village_construction_capability/farmer_finishes_but_does_not_build_frame",
+  "environment": "vanillainstincts:village_construction_capability",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

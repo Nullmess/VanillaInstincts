@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:door_learning/zombification_copies_door_knowledge",
+  "environment": "vanillainstincts:door_learning",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

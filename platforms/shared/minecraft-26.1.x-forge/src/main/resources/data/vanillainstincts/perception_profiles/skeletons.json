@@ -1,0 +1,22 @@
+{
+  "priority": 100,
+  "entities": [
+    "minecraft:skeleton",
+    "minecraft:stray",
+    "minecraft:bogged",
+    "minecraft:wither_skeleton"
+  ],
+  "visual_range": 42.0,
+  "hearing_multiplier": 0.95,
+  "night_visual_multiplier": 1.08,
+  "rain_visual_multiplier": 0.84,
+  "sneaking_visual_multiplier": 0.70,
+  "invisible_visual_multiplier": 0.48,
+  "blindness_range": 4.0,
+  "sneaking_hearing_multiplier": 0.70,
+  "easy_multiplier": 0.90,
+  "normal_multiplier": 1.0,
+  "hard_multiplier": 1.14,
+  "last_seen_ticks": 150,
+  "last_heard_ticks": 90
+}

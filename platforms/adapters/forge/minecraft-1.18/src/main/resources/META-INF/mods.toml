@@ -1,0 +1,26 @@
+modLoader="javafml"
+loaderVersion="${target_loader_version_range}"
+license="${mod_license}"
+
+[[mods]]
+modId="${mod_id}"
+version="${mod_version}"
+displayName="${mod_name}"
+authors="Vanilla Instincts"
+description='''
+Vanilla Instincts expands the natural intelligence of Minecraft creatures while preserving their original powers, roles and vanilla identity.
+'''
+
+[[dependencies.${mod_id}]]
+modId="forge"
+mandatory=true
+versionRange="[${target_forge_version},)"
+ordering="NONE"
+side="BOTH"
+
+[[dependencies.${mod_id}]]
+modId="minecraft"
+mandatory=true
+versionRange="${target_minecraft_version_range}"
+ordering="NONE"
+side="BOTH"

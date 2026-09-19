@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:world_permission/protected_tag_blocks_replacement",
+  "environment": "vanillainstincts:world_permission",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

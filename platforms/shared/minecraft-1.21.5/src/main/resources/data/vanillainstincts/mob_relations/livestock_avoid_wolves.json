@@ -1,0 +1,13 @@
+{
+  "priority": 90,
+  "observers": [
+    "minecraft:sheep",
+    "minecraft:rabbit",
+    "minecraft:chicken"
+  ],
+  "targets": "minecraft:wolf",
+  "relation": "AVOID",
+  "max_distance": 14.0,
+  "requires_line_of_sight": true,
+  "weight": 1.0
+}

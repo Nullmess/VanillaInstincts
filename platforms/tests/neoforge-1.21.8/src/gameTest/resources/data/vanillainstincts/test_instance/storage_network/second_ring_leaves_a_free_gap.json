@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:storage_network/second_ring_leaves_a_free_gap",
+  "environment": "vanillainstincts:storage_network",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

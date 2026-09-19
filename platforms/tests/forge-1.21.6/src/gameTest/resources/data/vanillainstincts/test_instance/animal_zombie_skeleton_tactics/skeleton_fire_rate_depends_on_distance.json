@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:animal_zombie_skeleton_tactics/skeleton_fire_rate_depends_on_distance",
+  "environment": "vanillainstincts:animal_zombie_skeleton_tactics",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

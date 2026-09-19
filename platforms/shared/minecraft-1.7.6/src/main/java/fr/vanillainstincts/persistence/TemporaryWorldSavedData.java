@@ -1,0 +1,379 @@
+package fr.vanillainstincts.persistence;
+
+
+import static fr.vanillainstincts.compat.Minecraft115PositionCompat.immutableBlockPos;
+import fr.vanillainstincts.VanillaInstincts;
+import fr.vanillainstincts.core.permission.WorldActionType;
+import fr.vanillainstincts.permission.WorldPermissionService;
+import fr.vanillainstincts.core.rules.GolemRules;
+import fr.vanillainstincts.core.rules.SpiderRules;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import fr.vanillainstincts.compat.BlockPos;
+import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.nbt.NBTTagList;
+import net.minecraft.nbt.NBTBase;
+import net.minecraft.world.WorldServer;
+import net.minecraft.block.Block;
+import net.minecraft.init.Blocks;
+import fr.vanillainstincts.compat.LegacyBlockState;
+import net.minecraft.world.WorldSavedData;
+
+/**
+ * Persiste les blocs temporaires par dimension.
+ *
+ * <p>Un bloc n'est retiré que si le chunk est chargé et si son état correspond
+ * encore à celui placé par le mod. Une modification du joueur est conservée.</p>
+ */
+public final class TemporaryWorldSavedData extends WorldSavedData {
+    private static final String DATA_NAME = VanillaInstincts.MOD_ID
+            + "_temporary_world";
+
+    private final Map<BlockPos, Long> webs = new HashMap<>();
+    private final Map<BlockPos, ScaffoldEntry> scaffolds = new HashMap<>();
+    private long lastWebCleanupAt = Long.MIN_VALUE / 2L;
+    private long lastScaffoldCleanupAt = Long.MIN_VALUE / 2L;
+
+    public TemporaryWorldSavedData() {
+        super(DATA_NAME);
+    }
+
+    public TemporaryWorldSavedData(String name) {
+        super(name);
+    }
+
+    public static TemporaryWorldSavedData get(WorldServer level) {
+        if (level == null) return new TemporaryWorldSavedData();
+        return fr.vanillainstincts.compat.Minecraft112SavedDataCompat.getOrCreate(
+                level, TemporaryWorldSavedData.class, DATA_NAME, TemporaryWorldSavedData::new);
+    }
+
+    @Override
+    public void readFromNBT(NBTTagCompound tag) {
+        webs.clear();
+        scaffolds.clear();
+        lastWebCleanupAt = Long.MIN_VALUE / 2L;
+        lastScaffoldCleanupAt = Long.MIN_VALUE / 2L;
+
+if (tag == null) {
+            return;
+        }
+
+        NBTTagList webEntries = tag.getTagList("webs", 10);
+        for (int index = 0; index < webEntries.tagCount(); index++) {
+            NBTTagCompound entry = webEntries.getCompoundTagAt(index);
+            if (!entry.hasKey("pos", 4)) {
+                continue;
+            }
+            webs.put(BlockPos.fromLong(entry.getLong("pos")),
+                    Math.max(1L, entry.getLong("expires_at")));
+        }
+
+        NBTTagList scaffoldEntries = tag.getTagList("scaffolds",
+                10);
+        for (int index = 0; index < scaffoldEntries.tagCount(); index++) {
+            NBTTagCompound entry = scaffoldEntries.getCompoundTagAt(index);
+            if (!entry.hasKey("pos", 4)
+                    || !entry.hasKey("state", 10)) {
+                continue;
+            }
+            LegacyBlockState state = fr.vanillainstincts.compat.Minecraft110Compat.readBlockState(
+                    entry.getCompoundTag("state"));
+            if (fr.vanillainstincts.compat.Minecraft112Compat.isAir(state)) {
+                continue;
+            }
+            UUID owner = fr.vanillainstincts.compat.Minecraft18NbtCompat.hasUniqueId(entry, "owner")
+                    ? fr.vanillainstincts.compat.Minecraft18NbtCompat.getUniqueId(entry, "owner") : null;
+            scaffolds.put(BlockPos.fromLong(entry.getLong("pos")),
+                    new ScaffoldEntry(state,
+                            Math.max(1L, entry.getLong("expires_at")), owner));
+        }
+
+        int storedVersion = NbtSchema.readVersion(tag);
+        if (storedVersion != PersistentDataVersions.TEMPORARY_WORLD) {
+            setDirty(true);
+        }
+    }
+
+    @Override
+    public void writeToNBT(NBTTagCompound tag) {
+        NbtSchema.writeVersion(tag,
+                PersistentDataVersions.TEMPORARY_WORLD);
+
+        NBTTagList webEntries = new NBTTagList();
+        for (Map.Entry<BlockPos, Long> entry : sortedWebs()) {
+            NBTTagCompound saved = new NBTTagCompound();
+            saved.setLong("pos", entry.getKey().toLong());
+            saved.setLong("expires_at", entry.getValue());
+            webEntries.appendTag(saved);
+        }
+        tag.setTag("webs", webEntries);
+
+        NBTTagList scaffoldEntries = new NBTTagList();
+        for (Map.Entry<BlockPos, ScaffoldEntry> entry : sortedScaffolds()) {
+            NBTTagCompound saved = new NBTTagCompound();
+            saved.setLong("pos", entry.getKey().toLong());
+            saved.setTag("state", fr.vanillainstincts.compat.Minecraft110Compat.writeBlockState(new NBTTagCompound(),
+                    entry.getValue().state()));
+            saved.setLong("expires_at", entry.getValue().expiresAt());
+            if (entry.getValue().ownerId() != null) {
+                fr.vanillainstincts.compat.Minecraft18NbtCompat.setUniqueId(saved, "owner", entry.getValue().ownerId());
+            }
+            scaffoldEntries.appendTag(saved);
+        }
+        tag.setTag("scaffolds", scaffoldEntries);
+        return;
+    }
+
+    public synchronized boolean registerWeb(BlockPos pos, long expiresAt) {
+        if (pos == null) {
+            return false;
+        }
+        if (webs.size() >= SpiderRules.MAX_TEMPORARY_WEBS_PER_LEVEL
+                && !webs.containsKey(pos)) {
+            return false;
+        }
+        Long previous = webs.put(immutableBlockPos(pos), Math.max(1L, expiresAt));
+        if (previous == null || previous.longValue() != Math.max(1L,
+                expiresAt)) {
+            setDirty(true);
+        }
+        return true;
+    }
+
+    public synchronized boolean canRegisterScaffold(BlockPos pos) {
+        return pos != null && (scaffolds.containsKey(pos)
+                || scaffolds.size()
+                < GolemRules.MAX_TEMPORARY_GOLEM_BLOCKS_PER_LEVEL);
+    }
+
+    public synchronized boolean registerScaffold(BlockPos pos,
+                                                  LegacyBlockState state,
+                                                  long expiresAt,
+                                                  UUID ownerId) {
+        if (pos == null || state == null || fr.vanillainstincts.compat.Minecraft112Compat.isAir(state)
+                || !canRegisterScaffold(pos)) {
+            return false;
+        }
+        ScaffoldEntry replacement = new ScaffoldEntry(state,
+                Math.max(1L, expiresAt), ownerId);
+        ScaffoldEntry previous = scaffolds.put(immutableBlockPos(pos), replacement);
+        if (!replacement.equals(previous)) {
+            setDirty(true);
+        }
+        return true;
+    }
+
+    public synchronized void tickWebs(WorldServer level, long gameTime) {
+        if (level == null || gameTime - lastWebCleanupAt
+                < SpiderRules.TEMPORARY_WEB_CLEANUP_INTERVAL_TICKS) {
+            return;
+        }
+        lastWebCleanupAt = gameTime;
+        boolean changed = webs.entrySet().removeIf(entry ->
+                reconcileWeb(level, entry.getKey(), entry.getValue(),
+                        gameTime));
+        if (changed) {
+            setDirty(true);
+        }
+    }
+
+    public synchronized void tickScaffolds(WorldServer level,
+                                            long gameTime) {
+        if (level == null || gameTime - lastScaffoldCleanupAt
+                < GolemRules.TEMPORARY_GOLEM_BLOCK_CLEANUP_TICKS) {
+            return;
+        }
+        lastScaffoldCleanupAt = gameTime;
+        boolean changed = scaffolds.entrySet().removeIf(entry ->
+                reconcileScaffold(level, entry.getKey(), entry.getValue(),
+                        gameTime));
+        if (changed) {
+            setDirty(true);
+        }
+    }
+
+    private static boolean reconcileWeb(WorldServer level, BlockPos pos,
+                                        long expiresAt, long gameTime) {
+        if (!fr.vanillainstincts.compat.Minecraft17Compat.isBlockLoaded(level, pos)) {
+            return false;
+        }
+        LegacyBlockState current = fr.vanillainstincts.compat.Minecraft17Compat.getBlockState(level, pos);
+        if (!current.getBlock().equals(Blocks.web)) {
+            return true;
+        }
+        if (gameTime < expiresAt) {
+            return false;
+        }
+        return WorldPermissionService.setBlock(level, null, pos,
+                fr.vanillainstincts.compat.Minecraft17Compat.defaultState(Blocks.air), 3,
+                WorldActionType.TEMPORARY_CLEANUP);
+    }
+
+    private static boolean reconcileScaffold(WorldServer level,
+                                             BlockPos pos,
+                                             ScaffoldEntry entry,
+                                             long gameTime) {
+        if (!fr.vanillainstincts.compat.Minecraft17Compat.isBlockLoaded(level, pos)) {
+            return false;
+        }
+        LegacyBlockState current = fr.vanillainstincts.compat.Minecraft17Compat.getBlockState(level, pos);
+        if (!current.equals(entry.state())) {
+            return true;
+        }
+        if (gameTime < entry.expiresAt()) {
+            return false;
+        }
+        return WorldPermissionService.setBlock(level, null, pos,
+                fr.vanillainstincts.compat.Minecraft17Compat.defaultState(Blocks.air), 3,
+                WorldActionType.TEMPORARY_CLEANUP);
+    }
+
+    public synchronized int countWebsNear(BlockPos center, double radius) {
+        if (center == null || radius < 0.0D) {
+            return 0;
+        }
+        double radiusSqr = radius * radius;
+        int count = 0;
+        for (BlockPos pos : webs.keySet()) {
+            if (pos.distanceSq(center) <= radiusSqr) {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    public synchronized int webCount() {
+        return webs.size();
+    }
+
+    public synchronized int scaffoldCount() {
+        return scaffolds.size();
+    }
+
+    public synchronized boolean isTrackedScaffold(WorldServer level,
+                                                   BlockPos pos) {
+        ScaffoldEntry entry = pos == null ? null : scaffolds.get(pos);
+        return entry != null && level != null && fr.vanillainstincts.compat.Minecraft17Compat.isBlockLoaded(level, pos)
+                && fr.vanillainstincts.compat.Minecraft17Compat.getBlockState(level, pos).equals(entry.state());
+    }
+
+    public synchronized boolean isTrackedScaffoldBy(WorldServer level,
+                                                     BlockPos pos,
+                                                     UUID ownerId) {
+        ScaffoldEntry entry = pos == null ? null : scaffolds.get(pos);
+        return entry != null && ownerId != null
+                && ownerId.equals(entry.ownerId())
+                && level != null && fr.vanillainstincts.compat.Minecraft17Compat.isBlockLoaded(level, pos)
+                && fr.vanillainstincts.compat.Minecraft17Compat.getBlockState(level, pos).equals(entry.state());
+    }
+
+    public synchronized boolean hasScaffoldsByOwner(UUID ownerId) {
+        return ownerId != null && scaffolds.values().stream()
+                .anyMatch(entry -> ownerId.equals(entry.ownerId()));
+    }
+
+    public synchronized int removeScaffoldsByOwner(WorldServer level,
+                                                   UUID ownerId) {
+        if (level == null || ownerId == null) {
+            return 0;
+        }
+        int[] removed = {0};
+        boolean changed = scaffolds.entrySet().removeIf(entry -> {
+            if (!ownerId.equals(entry.getValue().ownerId())) {
+                return false;
+            }
+            BlockPos pos = entry.getKey();
+            if (fr.vanillainstincts.compat.Minecraft17Compat.isBlockLoaded(level, pos)
+                    && fr.vanillainstincts.compat.Minecraft17Compat.getBlockState(level, pos)
+                    .equals(entry.getValue().state())) {
+                if (!WorldPermissionService.setBlock(level, null, pos,
+                        fr.vanillainstincts.compat.Minecraft17Compat.defaultState(Blocks.air), 3,
+                        WorldActionType.TEMPORARY_CLEANUP)) {
+                    return false;
+                }
+                removed[0]++;
+            }
+            return true;
+        });
+        if (changed) {
+            setDirty(true);
+        }
+        return removed[0];
+    }
+
+    public synchronized boolean removeScaffold(WorldServer level,
+                                                BlockPos pos) {
+        if (level == null || pos == null) {
+            return false;
+        }
+        ScaffoldEntry entry = scaffolds.get(pos);
+        if (entry == null || !fr.vanillainstincts.compat.Minecraft17Compat.isBlockLoaded(level, pos)
+                || !fr.vanillainstincts.compat.Minecraft17Compat.getBlockState(level, pos).equals(entry.state())) {
+            return false;
+        }
+        if (!WorldPermissionService.setBlock(level, null, pos,
+                fr.vanillainstincts.compat.Minecraft17Compat.defaultState(Blocks.air), 3,
+                WorldActionType.TEMPORARY_CLEANUP)) {
+            return false;
+        }
+        scaffolds.remove(pos);
+        setDirty(true);
+        return true;
+    }
+
+    private List<Map.Entry<BlockPos, Long>> sortedWebs() {
+        List<Map.Entry<BlockPos, Long>> values = new ArrayList<>(
+                webs.entrySet());
+        values.sort(Comparator.comparingLong(entry ->
+                entry.getKey().toLong()));
+        return values;
+    }
+
+    private List<Map.Entry<BlockPos, ScaffoldEntry>> sortedScaffolds() {
+        List<Map.Entry<BlockPos, ScaffoldEntry>> values = new ArrayList<>(
+                scaffolds.entrySet());
+        values.sort(Comparator.comparingLong(entry ->
+                entry.getKey().toLong()));
+        return values;
+    }
+
+    public static class ScaffoldEntry {
+        private final LegacyBlockState state;
+        private final long expiresAt;
+        private final UUID ownerId;
+
+        public ScaffoldEntry(LegacyBlockState state, long expiresAt, UUID ownerId) {
+            this.state = state;
+            this.expiresAt = expiresAt;
+            this.ownerId = ownerId;
+        }
+
+        public LegacyBlockState state() { return this.state; }
+
+        public long expiresAt() { return this.expiresAt; }
+
+        public UUID ownerId() { return this.ownerId; }
+
+        @Override
+        public boolean equals(Object other) {
+            if (this == other) return true;
+            if (!(other instanceof ScaffoldEntry)) return false;
+            ScaffoldEntry that = (ScaffoldEntry) other;
+            return java.util.Objects.equals(this.state, that.state) && this.expiresAt == that.expiresAt && java.util.Objects.equals(this.ownerId, that.ownerId);
+        }
+
+        @Override
+        public int hashCode() { return java.util.Objects.hash(this.state, this.expiresAt, this.ownerId); }
+
+        @Override
+        public String toString() {
+            return "ScaffoldEntry[" + "state=" + this.state + ", " + "expiresAt=" + this.expiresAt + ", " + "ownerId=" + this.ownerId + "]";
+        }
+
+    }
+}

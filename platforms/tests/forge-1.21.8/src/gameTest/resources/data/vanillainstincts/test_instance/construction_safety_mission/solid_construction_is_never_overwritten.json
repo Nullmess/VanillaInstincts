@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:construction_safety_mission/solid_construction_is_never_overwritten",
+  "environment": "vanillainstincts:construction_safety_mission",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

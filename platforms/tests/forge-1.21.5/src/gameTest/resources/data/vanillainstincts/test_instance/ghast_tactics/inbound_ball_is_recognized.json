@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:ghast_tactics/inbound_ball_is_recognized",
+  "environment": "vanillainstincts:ghast_tactics",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

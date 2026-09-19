@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:possession_catalog/possession_catalog_recognizes_real_vanilla_mob",
+  "environment": "vanillainstincts:possession_catalog",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

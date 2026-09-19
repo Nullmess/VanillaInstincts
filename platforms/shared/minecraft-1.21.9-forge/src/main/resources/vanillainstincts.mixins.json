@@ -1,0 +1,42 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "fr.vanillainstincts.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "AbstractHorseInventoryAccessor",
+    "EntityPassengerPositionMixin",
+    "BedBlockMixin",
+    "ServerPlayerGameModeMixin",
+    "ServerPlayerGameModeAccessor",
+    "FireBlockMixin",
+    "NetherPortalBlockMixin",
+    "VillagerGrandMasterDataMixin",
+    "FishingHookZombieOwnerMixin",
+    "AbstractSkeletonBowGoalAccessor",
+    "MobGoalSelectorAccessor",
+    "GoalSelectorDisabledFlagsAccessor",
+    "BrainPossessionMixin",
+    "ServerPlayerCameraPossessionMixin",
+    "LivingEntityPossessionTeleportMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  },
+  "client": [
+    "client.MerchantScreenMixin",
+    "client.VillagerProfessionLayerMixin",
+    "client.FishingHookRendererZombieMixin",
+    "client.VillagerRenderStateGrandMasterMixin",
+    "client.VillagerRendererGrandMasterStateMixin",
+    "client.SpiderSurfaceRotationMixin",
+    "client.InventoryScreenPossessionMixin",
+    "client.MinecraftPossessionInputMixin",
+    "client.ClientInputMoveVectorAccessor",
+    "client.GameRendererPossessionPickMixin",
+    "client.LivingEntityRendererLayersAccessor",
+    "client.EntityRenderStateEntityMixin",
+    "client.EntityRendererRenderStateMixin",
+    "client.ItemInHandPossessionMixin"
+  ]
+}

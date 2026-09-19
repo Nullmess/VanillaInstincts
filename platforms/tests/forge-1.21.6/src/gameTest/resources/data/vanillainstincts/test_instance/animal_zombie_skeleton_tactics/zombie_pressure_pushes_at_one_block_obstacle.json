@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:animal_zombie_skeleton_tactics/zombie_pressure_pushes_at_one_block_obstacle",
+  "environment": "vanillainstincts:animal_zombie_skeleton_tactics",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

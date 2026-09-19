@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:pillager_loot/empty_stack_is_not_loot",
+  "environment": "vanillainstincts:pillager_loot",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

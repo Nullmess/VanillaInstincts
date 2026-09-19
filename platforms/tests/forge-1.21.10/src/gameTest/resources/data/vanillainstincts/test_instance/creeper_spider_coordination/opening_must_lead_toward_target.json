@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:creeper_spider_coordination/opening_must_lead_toward_target",
+  "environment": "vanillainstincts:creeper_spider_coordination",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

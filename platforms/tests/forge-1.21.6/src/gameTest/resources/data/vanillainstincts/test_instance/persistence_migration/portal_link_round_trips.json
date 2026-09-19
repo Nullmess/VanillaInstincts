@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:persistence_migration/portal_link_round_trips",
+  "environment": "vanillainstincts:persistence_migration",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

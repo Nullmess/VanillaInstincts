@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:ghast_tactics/normal_volley_is_occasional",
+  "environment": "vanillainstincts:ghast_tactics",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

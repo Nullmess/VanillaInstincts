@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:possession_catalog/cod_uses_aquatic_movement",
+  "environment": "vanillainstincts:possession_catalog",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

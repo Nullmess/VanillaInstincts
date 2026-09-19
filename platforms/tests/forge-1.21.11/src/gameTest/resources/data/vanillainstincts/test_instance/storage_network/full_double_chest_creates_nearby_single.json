@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:storage_network/full_double_chest_creates_nearby_single",
+  "environment": "vanillainstincts:storage_network",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

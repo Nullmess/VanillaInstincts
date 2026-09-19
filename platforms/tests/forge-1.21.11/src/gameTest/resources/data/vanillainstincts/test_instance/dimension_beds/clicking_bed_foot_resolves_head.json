@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:dimension_beds/clicking_bed_foot_resolves_head",
+  "environment": "vanillainstincts:dimension_beds",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

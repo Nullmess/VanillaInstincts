@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:village_template_selection/zero_limit_returns_empty",
+  "environment": "vanillainstincts:village_template_selection",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

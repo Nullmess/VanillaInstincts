@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:storage_network/full_container_rejects_loot",
+  "environment": "vanillainstincts:storage_network",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

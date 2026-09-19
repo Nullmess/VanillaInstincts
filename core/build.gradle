@@ -1,0 +1,53 @@
+plugins {
+    id 'java-library'
+}
+
+// Forge 1.21.11 runs through the isolated FG7/Gradle 9.5 wrapper, whose
+// toolchain set intentionally exposes Java 21/25 only. Java 21 can compile the
+// shared core safely for Java 17 via --release 17, so keep the produced bytecode
+// baseline unchanged while avoiding an unnecessary third JDK in that one build.
+def currentTarget = providers.gradleProperty('target').orNull ?: ''
+def coreCompilerJava = currentTarget == 'forge-1.21.11'
+        ? 21
+        : ((currentTarget.startsWith('forge-26.')
+            || currentTarget.startsWith('neoforge-26.')) ? 25 : 17)
+
+java {
+    // Core is embedded in every Minecraft target. Keep its bytecode/API baseline
+    // at Java 17 so 1.20.4 can consume it, while newer Java 21 targets remain
+    // fully compatible with the same core JAR.
+    toolchain.languageVersion = JavaLanguageVersion.of(coreCompilerJava)
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+    withSourcesJar()
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    testImplementation platform('org.junit:junit-bom:5.11.4')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+    options.release = 17
+}
+
+tasks.withType(Test).configureEach {
+    useJUnitPlatform()
+}
+
+tasks.withType(Jar).configureEach {
+    preserveFileTimestamps = false
+    reproducibleFileOrder = true
+    manifest {
+        attributes([
+            'FMLModType'           : 'GAMELIBRARY',
+            'Automatic-Module-Name': 'fr.vanillainstincts.core'
+        ])
+    }
+}

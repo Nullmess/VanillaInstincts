@@ -1,0 +1,9 @@
+{
+  "priority": 95,
+  "observers": ["minecraft:zombie", "minecraft:husk", "minecraft:drowned"],
+  "targets": ["minecraft:villager", "minecraft:wandering_trader"],
+  "relation": "HUNT",
+  "max_distance": 32.0,
+  "requires_line_of_sight": true,
+  "weight": 0.95
+}

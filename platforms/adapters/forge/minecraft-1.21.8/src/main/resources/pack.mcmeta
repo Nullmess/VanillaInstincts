@@ -1,0 +1,10 @@
+{
+  "pack": {
+    "description": "Vanilla Instincts resources",
+    "pack_format": 71,
+    "supported_formats": [
+      55,
+      71
+    ]
+  }
+}

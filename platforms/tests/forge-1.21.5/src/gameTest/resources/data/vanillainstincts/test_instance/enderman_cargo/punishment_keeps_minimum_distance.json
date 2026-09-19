@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:enderman_cargo/punishment_keeps_minimum_distance",
+  "environment": "vanillainstincts:enderman_cargo",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

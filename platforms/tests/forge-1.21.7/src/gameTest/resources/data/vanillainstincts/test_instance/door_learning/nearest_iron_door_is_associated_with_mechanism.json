@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:door_learning/nearest_iron_door_is_associated_with_mechanism",
+  "environment": "vanillainstincts:door_learning",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

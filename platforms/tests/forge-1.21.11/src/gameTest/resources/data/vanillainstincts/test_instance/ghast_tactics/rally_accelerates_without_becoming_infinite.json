@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:ghast_tactics/rally_accelerates_without_becoming_infinite",
+  "environment": "vanillainstincts:ghast_tactics",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

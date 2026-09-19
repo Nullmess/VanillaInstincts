@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:village_community_construction/unemployed_can_build_weaponsmith_workshop",
+  "environment": "vanillainstincts:village_community_construction",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

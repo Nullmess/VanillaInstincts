@@ -1,0 +1,1015 @@
+import groovy.json.JsonSlurper
+
+File catalogFile = rootProject.file('gradle/minecraft-targets.json')
+def catalog = new JsonSlurper().parse(catalogFile)
+def target = catalog.targets.find {
+    rootProject.file(it.projectDir as String).canonicalFile == project.projectDir.canonicalFile
+}
+if (target == null) {
+    throw new GradleException("No Minecraft target catalog entry matches ${project.projectDir}")
+}
+if (target.loader != 'forge') {
+    throw new GradleException("Target ${target.id} is not a Forge target.")
+}
+
+def family = (catalog.minecraftFamilies ?: []).find { it.id == target.minecraftFamily }
+def adapter = (catalog.loaderAdapters ?: []).find { it.id == target.loaderAdapter }
+if (family == null || adapter == null) {
+    throw new GradleException("Incomplete family/adapter catalog entry for ${target.id}.")
+}
+
+File minecraftFamily = rootProject.file(family.dir as String)
+File loaderAdapter = rootProject.file(adapter.dir as String)
+String gameTestSuitePath = target.gameTestSuite ?: 'platforms/tests/forge'
+File gameTestSuite = rootProject.file(gameTestSuitePath)
+if (!minecraftFamily.isDirectory()) {
+    throw new GradleException("Missing Minecraft family for ${target.id}: ${minecraftFamily}")
+}
+if (!loaderAdapter.isDirectory()) {
+    throw new GradleException("Missing Forge adapter for ${target.id}: ${loaderAdapter}")
+}
+
+String targetId = target.id as String
+String minecraftVersion = target.minecraft as String
+String minecraftRange = target.minecraftRange as String
+String forgeVersion = target.loaderVersion as String
+String loaderVersionRange = target.loaderVersionRange as String
+int javaVersion = (target.java as Number).intValue()
+def sharedCoreProject = project(javaVersion <= 8 ? ':core-legacy' : ':core')
+boolean gameTestsEnabled = target.gameTests == true
+String gameTestNamespace = gameTestsEnabled ? target.gameTestNamespace as String : ''
+boolean registryGameTests = minecraftVersion in ['1.21.5', '1.21.6', '1.21.7', '1.21.8', '1.21.9', '1.21.10', '1.21.11']
+boolean forgeGradle7 = minecraftVersion == '1.21.11' || minecraftVersion.startsWith('26.')
+if (gameTestsEnabled && !gameTestSuite.isDirectory()) {
+    throw new GradleException("Missing Forge GameTest suite for ${target.id}: ${gameTestSuite}")
+}
+
+base {
+    archivesName = target.artifactBase as String
+}
+
+java.toolchain.languageVersion = JavaLanguageVersion.of(javaVersion)
+
+sourceSets {
+    main {
+        java.setSrcDirs([
+                new File(minecraftFamily, 'src/main/java'),
+                new File(loaderAdapter, 'src/main/java')
+        ])
+        resources.setSrcDirs([
+                new File(minecraftFamily, 'src/main/resources'),
+                new File(minecraftFamily, 'src/generated/resources'),
+                new File(loaderAdapter, 'src/main/resources')
+        ])
+        resources.exclude('**/*.bbmodel')
+        resources.exclude('src/generated/**/.cache')
+    }
+    if (gameTestsEnabled) {
+        gameTest {
+            if (forgeGradle7) {
+                // Keep GameTest sources/resources isolated from production. For
+                // Forge 1.21.11, ForgeGradle's merge-source-sets option gives each
+                // source set one physical output root. Immediately before the native
+                // GameTest run, the test-only output is overlaid into main's unified
+                // root so FML receives one self-contained local mod.
+                java.setSrcDirs([
+                        new File(gameTestSuite, 'src/gameTest/java')
+                ])
+                resources.setSrcDirs([
+                        new File(gameTestSuite, 'src/gameTest/resources')
+                ])
+
+                // Keep the Forge dependency owned by main only. ForgeGradle 7 rewrites
+                // the GameTest classpath later while it wires UserDev, so only declare
+                // the test output/runtime relation here. The compiled production output
+                // is re-attached to compileGameTestJava after evaluation below, once FG7
+                // has finished replacing the task classpath. This avoids creating a
+                // second Minecraft-bearing source set while still exposing every
+                // fr.vanillainstincts production class to the GameTests.
+                runtimeClasspath = output + sourceSets.main.runtimeClasspath
+            } else {
+                // ForgeGradle 6 targets keep the established self-contained GameTest
+                // source set/runtime JAR layout.
+                java.setSrcDirs([
+                        new File(minecraftFamily, 'src/main/java'),
+                        new File(loaderAdapter, 'src/main/java'),
+                        new File(gameTestSuite, 'src/gameTest/java')
+                ])
+                resources.setSrcDirs([
+                        new File(minecraftFamily, 'src/main/resources'),
+                        new File(minecraftFamily, 'src/generated/resources'),
+                        new File(loaderAdapter, 'src/main/resources'),
+                        new File(gameTestSuite, 'src/gameTest/resources')
+                ])
+                resources.exclude('**/*.bbmodel')
+                resources.exclude('src/generated/**/.cache')
+            }
+        }
+
+        if (!forgeGradle7) {
+            // ForgeGradle 6 keeps the isolated runtime-JAR launcher used by the
+            // already validated older Forge targets.
+            gameTestLauncher {
+                java.setSrcDirs([])
+                resources.setSrcDirs([])
+                compileClasspath = sourceSets.main.compileClasspath
+                runtimeClasspath = sourceSets.main.runtimeClasspath - sourceSets.main.output
+            }
+        }
+    }
+}
+
+repositories {
+    if (forgeGradle7) {
+        // Forge 1.21.11's official MDK uses ForgeGradle 7's Minecraft
+        // Mavenizer and Forge/Minecraft library repositories.
+        minecraft.mavenizer(it)
+        maven fg.forgeMaven
+        def minecraftLibsRepo = maven(fg.minecraftLibsMaven)
+        if (minecraftVersion.startsWith('26.')) {
+            // Keep ForgeGradle's special repository notation intact when the
+            // repository is created. Configure the resulting Maven repository
+            // afterwards so Gradle 9 does not request Mojang's .module metadata.
+            minecraftLibsRepo.metadataSources {
+                mavenPom()
+                artifact()
+                ignoreGradleMetadataRedirection()
+            }
+        }
+    }
+    mavenCentral()
+    if (minecraftVersion in ['1.15', '1.15.1']) {
+        maven {
+            name = 'SpongePowered'
+            url = uri('https://repo.spongepowered.org/repository/maven-public/')
+        }
+    }
+}
+
+minecraft {
+    if (!minecraftVersion.startsWith('26.')) {
+        mappings channel: 'official', version: minecraftVersion
+    }
+    if (!forgeGradle7) {
+        // ForgeGradle 6 option. FG7 uses the dependency/Mavenizer pipeline
+        // and no longer needs the old userdev reobf switch here.
+        reobf = false
+    }
+
+    runs {
+        configureEach { runConfig ->
+            // Use the run object explicitly. In a shared Gradle script an unqualified
+            // `name` can resolve outside the run delegate, which made gameTestServer
+            // inherit the normal main source roots before its special configuration.
+            if (forgeGradle7) {
+                // ForgeGradle 7 uses a DirectoryProperty named workingDir and
+                // systemProperty(...) instead of the FG6 workingDirectory/property DSL.
+                runConfig.workingDir = rootProject.layout.projectDirectory.dir("run/${targetId}/${runConfig.name}")
+                runConfig.systemProperty 'forge.logging.markers', 'REGISTRIES'
+                runConfig.systemProperty 'forge.logging.console.level', 'info'
+                runConfig.systemProperty 'eventbus.api.strictRuntimeChecks', 'true'
+
+                // In FG7 the development mod is loaded from an exploded SourceSet
+                // directory, not from the public JAR. There is therefore no JAR
+                // manifest for ModLauncher to read the production `MixinConfigs`
+                // attribute from. Register the production mixin config explicitly
+                // for every Forge 1.21.11 UserDev run, matching what MixinGradle
+                // normally injects into Forge run configurations.
+                runConfig.args '--mixin.config', 'vanillainstincts.mixins.json'
+            } else {
+                runConfig.workingDirectory rootProject.file("run/${targetId}/${runConfig.name}")
+                runConfig.property 'forge.logging.markers', 'REGISTRIES'
+                runConfig.property 'forge.logging.console.level', 'info'
+                if (minecraftVersion in ['1.21.6', '1.21.7', '1.21.8', '1.21.9', '1.21.10']) {
+                    runConfig.property 'eventbus.api.strictRuntimeChecks', 'true'
+                }
+            }
+
+            boolean isolatedGameTestRun = gameTestsEnabled && runConfig.name == 'gameTestServer'
+            if (!isolatedGameTestRun) {
+                runConfig.mods {
+                    vanillainstincts {
+                        source sourceSets.main
+                    }
+                }
+            }
+        }
+
+        if (forgeGradle7) {
+            // FG7's runs container starts empty; the official 1.21.11 MDK
+            // registers the standard runs explicitly.
+            register('client') {
+                if (gameTestsEnabled) {
+                    systemProperty 'forge.enabledGameTestNamespaces', gameTestNamespace
+                    systemProperty 'forge.enableGameTest', 'true'
+                }
+            }
+
+            register('server') {
+                if (gameTestsEnabled) {
+                    systemProperty 'forge.enabledGameTestNamespaces', gameTestNamespace
+                    systemProperty 'forge.enableGameTest', 'true'
+                }
+                args '--nogui'
+            }
+
+            if (gameTestsEnabled) {
+                register('gameTestServer') {
+                    systemProperty 'forge.enabledGameTestNamespaces', gameTestNamespace
+                    systemProperty 'forge.enableGameTest', 'true'
+                }
+
+                // ForgeGradle 7's official merge-source-sets switch makes main's
+                // resources and Java classes share one output directory. Keep FML's
+                // local-mod mapping deliberately simple: one mod, one source set,
+                // one physical root. GameTest classes/resources are overlaid into
+                // that root only for the duration of runGameTestServer below.
+                named('gameTestServer').configure { runConfig ->
+                    runConfig.getMods().clear()
+                    def gameTestMod = runConfig.getMods().maybeCreate('vanillainstincts')
+                    gameTestMod.setSources([sourceSets.main])
+                    println 'Forge 1.21.11 GameTest source_roots: vanillainstincts -> merged main output only'
+                    println 'Forge 1.21.11 UserDev mixin config: vanillainstincts.mixins.json'
+                }
+            }
+        } else {
+            client {
+                if (gameTestsEnabled) {
+                    property 'forge.enabledGameTestNamespaces', gameTestNamespace
+                    property 'forge.enableGameTest', 'true'
+                }
+            }
+
+            server {
+                if (gameTestsEnabled) {
+                    property 'forge.enabledGameTestNamespaces', gameTestNamespace
+                    property 'forge.enableGameTest', 'true'
+                }
+                args '--nogui'
+            }
+
+            if (gameTestsEnabled) {
+                gameTestServer {
+                    property 'forge.enabledGameTestNamespaces', gameTestNamespace
+                    property 'forge.enableGameTest', 'true'
+                    // Do not expose development output directories as local mods.
+                    // Forge 51 can split resources/classes into separate mod files in
+                    // this multi-source layout. Load one self-contained runtime JAR
+                    // from run/mods instead, while keeping the launcher source set empty.
+                    source sourceSets.gameTestLauncher
+
+                    // Forge 55.1.12 still routes forge_userdev_server_gametest through
+                    // net.minecraftforge.gametest.GameTestMain -> net.minecraft.server.Main,
+                    // while Minecraft 1.21.5 moved the real registry/datapack runner to
+                    // net.minecraft.gametest.Main. Do not pass the new CLI options to the
+                    // legacy Forge main (it rejects them). A test-only mixin switches to
+                    // the new runner immediately after ServerModLoader.load(), preserving
+                    // Forge/FML/ModList initialization first.
+                    if (minecraftVersion == '1.21.5') {
+                        property 'vanillainstincts.forge1215.gametest.bridge', 'true'
+                        property 'vanillainstincts.forge1215.gametest.packs', 'mods'
+                        property 'vanillainstincts.forge1215.gametest.tests', "${gameTestNamespace}:*"
+                        property 'vanillainstincts.forge1215.gametest.report', 'gametest-results.xml'
+                        property 'vanillainstincts.forge1215.gametest.universe', 'gametestserver'
+                    }
+                    else if (minecraftVersion == '1.21.6') {
+                        property 'vanillainstincts.forge1216.gametest.bridge', 'true'
+                        property 'vanillainstincts.forge1216.gametest.packs', 'mods'
+                        property 'vanillainstincts.forge1216.gametest.tests', "${gameTestNamespace}:*"
+                        property 'vanillainstincts.forge1216.gametest.report', 'gametest-results.xml'
+                        property 'vanillainstincts.forge1216.gametest.universe', 'gametestserver'
+                    }
+                }
+            }
+        }
+    }
+}
+
+// ForgeGradle 7 finalizes the UserDev/GameTest JavaCompile classpath after the
+// sourceSets block above. On Forge 1.21.11 it can replace the gameTest source
+// set classpath with one that contains neither the production output nor main's
+// resolved UserDev dependencies. compileJava already proves that main.compileClasspath
+// is the correct Minecraft/Forge + project dependency classpath for this target.
+// Re-attach both pieces at task level after evaluation while preserving anything
+// FG7 added to compileGameTestJava itself.
+if (gameTestsEnabled && forgeGradle7) {
+    afterEvaluate {
+        tasks.named('compileGameTestJava', JavaCompile).configure { gameTestCompile ->
+            dependsOn tasks.named('classes')
+            dependsOn sharedCoreProject.tasks.named('classes')
+            gameTestCompile.classpath = project.files(
+                    sourceSets.main.output,
+                    sourceSets.main.compileClasspath,
+                    gameTestCompile.classpath
+            )
+        }
+    }
+}
+
+configurations {
+    if (gameTestsEnabled && !forgeGradle7) {
+        // ForgeGradle 6 targets keep the established configuration inheritance.
+        gameTestImplementation.extendsFrom implementation
+        gameTestRuntimeOnly.extendsFrom runtimeOnly
+    }
+}
+
+dependencies {
+    implementation sharedCoreProject
+    if (forgeGradle7) {
+        // ForgeGradle 7 official MDK dependency form.
+        implementation minecraft.dependency("net.minecraftforge:forge:${minecraftVersion}-${forgeVersion}")
+    } else {
+        minecraft "net.minecraftforge:forge:${minecraftVersion}-${forgeVersion}"
+    }
+
+    // Forge 1.15 / 29.0.4 and 1.15.1 / 30.0.51 predate Forge's bundled Mixin integration.
+    // Compile the mixin sources against the same 0.8 API expected by the
+    // project's mixin config; runtime bootstrap is supplied separately.
+    if (minecraftVersion in ['1.15', '1.15.1']) {
+        compileOnly('org.spongepowered:mixin:0.8') {
+            transitive = false
+        }
+    }
+
+    // Forge 51.x predates the upstream JOpt Simple strict-version fix.
+    // Minecraft 1.21 ships 5.0.4; forcing it prevents both 5.0.4 and
+    // 6.0-alpha-3 from entering the Java module path at the same time.
+    if (minecraftVersion == '1.21') {
+        implementation('net.sf.jopt-simple:jopt-simple:5.0.4') {
+            version { strictly '5.0.4' }
+        }
+    }
+}
+
+tasks.withType(ProcessResources).configureEach {
+    def replaceProperties = [
+            target_minecraft_version       : minecraftVersion,
+            target_minecraft_version_range : minecraftRange,
+            target_loader                  : 'forge',
+            target_loader_version          : forgeVersion,
+            target_forge_version           : forgeVersion,
+            target_loader_version_range    : loaderVersionRange,
+            target_java_version            : String.valueOf(javaVersion),
+            target_game_tests              : gameTestsEnabled ? '600' : '0',
+            target_game_test_namespaces    : gameTestsEnabled ? '1' : '0',
+            target_game_test_server_runs   : gameTestsEnabled ? '1' : '0',
+            mod_id                         : mod_id,
+            mod_name                       : mod_name,
+            mod_license                    : mod_license,
+            mod_version                    : mod_version,
+            mod_release_channel            : mod_release_channel,
+            mod_release_date               : mod_release_date
+    ]
+
+    inputs.properties replaceProperties
+    filesMatching([
+            'META-INF/mods.toml',
+            'META-INF/vanillainstincts-release.properties'
+    ]) {
+        expand replaceProperties
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+
+    // javac 8 predates the --release flag. Native Java 8 targets therefore
+    // use the classic source/target compatibility switches, while Java 9+
+    // targets keep Gradle's release flag for reproducible API targeting.
+    if (javaVersion <= 8) {
+        sourceCompatibility = '1.8'
+        targetCompatibility = '1.8'
+    } else {
+        options.release = javaVersion
+    }
+}
+
+tasks.withType(Jar).configureEach {
+    preserveFileTimestamps = false
+    reproducibleFileOrder = true
+    manifest {
+        attributes([
+                'Specification-Title'   : mod_name,
+                'Specification-Vendor'  : 'Vanilla Instincts',
+                'Specification-Version' : mod_version,
+                'Implementation-Title'  : mod_name,
+                'Implementation-Version': mod_version,
+                'Implementation-Vendor' : 'Vanilla Instincts',
+                'Automatic-Module-Name' : 'fr.vanillainstincts',
+                'Release-Channel'       : mod_release_channel,
+                'Minecraft-Version'     : minecraftVersion,
+                'Mod-Loader'            : 'Forge',
+                'Forge-Version'         : forgeVersion,
+                'MixinConfigs'          : 'vanillainstincts.mixins.json'
+        ])
+    }
+}
+
+tasks.named('jar', Jar).configure {
+    dependsOn sharedCoreProject.tasks.named('classes')
+    from(sharedCoreProject.sourceSets.main.output)
+    from(rootProject.file('LICENSE')) {
+        into 'META-INF'
+        rename { 'LICENSE_Vanilla_Instincts' }
+    }
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+
+tasks.register('verifyTargetJar') {
+    group = 'verification'
+    description = "Verify the public ${targetId} JAR."
+    dependsOn tasks.named('jar')
+
+    doLast {
+        File jarFile = tasks.named('jar', Jar).get().archiveFile.get().asFile
+        if (!jarFile.isFile() || jarFile.length() < 10_000L) {
+            throw new GradleException("Invalid ${targetId} JAR: ${jarFile}")
+        }
+
+        java.util.zip.ZipFile archive = new java.util.zip.ZipFile(jarFile)
+        try {
+            [
+                    'META-INF/mods.toml',
+                    'META-INF/vanillainstincts-release.properties',
+                    'META-INF/LICENSE_Vanilla_Instincts',
+                    'vanillainstincts.mixins.json',
+                    'fr/vanillainstincts/VanillaInstincts.class'
+            ].each { entry ->
+                if (archive.getEntry(entry) == null) {
+                    throw new GradleException("Required JAR entry is missing: ${entry}")
+                }
+            }
+
+            String releaseMetadata = archive.getInputStream(archive.getEntry(
+                    'META-INF/vanillainstincts-release.properties')).getText('UTF-8')
+            if (!releaseMetadata.contains("version=${mod_version}")
+                    || !releaseMetadata.contains("release_channel=${mod_release_channel}")
+                    || !releaseMetadata.contains("minecraft_version=${minecraftVersion}")
+                    || !releaseMetadata.contains('loader=forge')
+                    || !releaseMetadata.contains("loader_version=${forgeVersion}")) {
+                throw new GradleException("Release metadata is inconsistent for ${targetId}.")
+            }
+
+            archive.entries().each { entry ->
+                if (entry.name.startsWith('fr/vanillainstincts/gametest/')
+                        || entry.name == 'data/vanillainstincts/structure/empty.nbt'
+                        || entry.name == 'data/minecraft/structure/vanillainstincts.empty.nbt') {
+                    throw new GradleException(
+                            "GameTest content leaked into the public JAR: ${entry.name}")
+                }
+
+                // Java 8 Forge targets must never publish classes compiled by a
+                // newer JDK. Check every class entry, including classes merged
+                // from core-legacy, instead of trusting only Gradle toolchains.
+                if (javaVersion <= 8 && !entry.isDirectory() && entry.name.endsWith('.class')) {
+                    InputStream classStream = archive.getInputStream(entry)
+                    try {
+                        byte[] header = new byte[8]
+                        int offset = 0
+                        while (offset < header.length) {
+                            int read = classStream.read(header, offset, header.length - offset)
+                            if (read < 0) break
+                            offset += read
+                        }
+                        if (offset < header.length
+                                || (header[0] & 0xff) != 0xca
+                                || (header[1] & 0xff) != 0xfe
+                                || (header[2] & 0xff) != 0xba
+                                || (header[3] & 0xff) != 0xbe) {
+                            throw new GradleException("Invalid class header in public JAR: ${entry.name}")
+                        }
+                        int major = ((header[6] & 0xff) << 8) | (header[7] & 0xff)
+                        if (major > 52) {
+                            throw new GradleException(
+                                    "Java 8 target ${targetId} contains class major ${major} (>52): ${entry.name}")
+                        }
+                    } finally {
+                        classStream.close()
+                    }
+                }
+            }
+        } finally {
+            archive.close()
+        }
+
+        println "JAR verified [${targetId}]: ${jarFile.name} (${jarFile.length()} bytes)"
+    }
+}
+
+if (gameTestsEnabled) {
+    def gameTestRuntimeJar = tasks.register('gameTestRuntimeJar', Jar) {
+        group = 'verification'
+        description = "Build the dedicated GameTest runtime mod for ${targetId}."
+        dependsOn tasks.named('gameTestClasses')
+        dependsOn sharedCoreProject.tasks.named('classes')
+
+        archiveClassifier = 'gametest-runtime'
+        destinationDirectory = layout.buildDirectory.dir('gametest-runtime')
+        duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+
+        // gameTest already compiles production + test sources/resources.
+        // Keep :core external on the launcher runtime classpath so it exists once
+        // and does not become a duplicate Java module inside this runtime JAR.
+        from(sourceSets.gameTest.output)
+        if (minecraftVersion == '1.21') {
+            manifest {
+                attributes([
+                        'MixinConfigs': 'vanillainstincts.mixins.json,vanillainstincts.gametest.mixins.json'
+                ])
+            }
+        } else if (minecraftVersion == '1.21.5') {
+            manifest {
+                attributes([
+                        'MixinConfigs': 'vanillainstincts.mixins.json,vanillainstincts.forge1215.gametest.mixins.json'
+                ])
+            }
+        } else if (minecraftVersion == '1.21.6') {
+            manifest {
+                attributes([
+                        'MixinConfigs': 'vanillainstincts.mixins.json,vanillainstincts.forge1216.gametest.mixins.json'
+                ])
+            }
+        } else if (minecraftVersion in ['1.21.7', '1.21.8', '1.21.9', '1.21.10', '1.21.11']) {
+            // Forge 57+ launches the registry/datapack GameTest runner natively.
+            // Keep only the production mixins in the isolated GameTest runtime JAR.
+            manifest {
+                attributes([
+                        'MixinConfigs': 'vanillainstincts.mixins.json'
+                ])
+            }
+        }
+        from(rootProject.file('LICENSE')) {
+            into 'META-INF'
+            rename { 'LICENSE_Vanilla_Instincts' }
+        }
+    }
+
+    def installGameTestRuntimeJar = tasks.register('installGameTestRuntimeJar', Sync) {
+        group = 'verification'
+        description = "Install the ${targetId} GameTest runtime JAR into its isolated run directory."
+        dependsOn gameTestRuntimeJar
+        from(gameTestRuntimeJar.flatMap { it.archiveFile })
+        into rootProject.file("run/${targetId}/gameTestServer/mods")
+    }
+
+    def forge12111OverlayManifest = forgeGradle7
+            ? layout.buildDirectory.file('tmp/forge12111-gametest-overlay/files.txt')
+            : null
+
+    def forge12111MainOutputRoot = {
+        File resourcesRoot = sourceSets.main.output.resourcesDir
+        Set<File> classRoots = new LinkedHashSet<>(sourceSets.main.output.classesDirs.files)
+        if (resourcesRoot == null || classRoots.size() != 1) {
+            throw new GradleException(
+                    'ForgeGradle merge-source-sets is not active for main: expected one unified classes/resources root.')
+        }
+        File classRoot = classRoots.iterator().next()
+        if (resourcesRoot.canonicalFile != classRoot.canonicalFile) {
+            throw new GradleException(
+                    "ForgeGradle merge-source-sets is not active for main: resources=${resourcesRoot}, classes=${classRoot}")
+        }
+        resourcesRoot.canonicalFile
+    }
+
+    def cleanupForge12111GameTestOverlayFiles = { boolean announce ->
+        if (!forgeGradle7) {
+            return
+        }
+        File manifest = forge12111OverlayManifest.get().asFile
+        if (!manifest.isFile()) {
+            return
+        }
+
+        File mainRoot = forge12111MainOutputRoot()
+        List<String> relativeFiles = manifest.readLines('UTF-8').findAll { !it.trim().isEmpty() }
+        relativeFiles.each { relativePath ->
+            File overlaid = new File(mainRoot, relativePath)
+            if (overlaid.isFile() && !overlaid.delete()) {
+                throw new GradleException(
+                        "Unable to remove temporary Forge 1.21.11 GameTest overlay file: ${overlaid}")
+            }
+        }
+
+        // Remove directories made empty by the overlay, deepest first, but never
+        // touch the unified production root itself. Production files remain intact.
+        Set<File> candidateDirs = new LinkedHashSet<>()
+        relativeFiles.each { relativePath ->
+            File parent = new File(mainRoot, relativePath).parentFile
+            while (parent != null && parent.canonicalFile != mainRoot) {
+                candidateDirs.add(parent)
+                parent = parent.parentFile
+            }
+        }
+        candidateDirs.toList().sort { a, b -> b.absolutePath.length() <=> a.absolutePath.length() }.each { dir ->
+            String[] children = dir.list()
+            if (children != null && children.length == 0) {
+                dir.delete()
+            }
+        }
+
+        if (!manifest.delete()) {
+            throw new GradleException(
+                    "Unable to remove Forge 1.21.11 GameTest overlay manifest: ${manifest}")
+        }
+        if (announce && !relativeFiles.isEmpty()) {
+            println "Forge 1.21.11 GameTest overlay cleaned: ${relativeFiles.size()} files"
+        }
+    }
+
+    def cleanupForge12111GameTestOverlay = forgeGradle7
+            ? tasks.register('cleanupForge12111GameTestOverlay') {
+                group = 'verification'
+                description = 'Remove the temporary Forge 1.21.11 GameTest files from the unified main output.'
+                doLast {
+                    cleanupForge12111GameTestOverlayFiles(true)
+                }
+            }
+            : null
+
+    tasks.matching { it.name == 'runGameTestServer' }.configureEach {
+        if (!forgeGradle7) {
+            dependsOn installGameTestRuntimeJar
+        } else {
+            dependsOn tasks.named('gameTestClasses')
+            dependsOn tasks.named('verifyTargetJar')
+            finalizedBy cleanupForge12111GameTestOverlay
+
+            doFirst {
+                // If a previous Gradle/Java process was killed before finalizers ran,
+                // restore the production output first using the persisted manifest.
+                cleanupForge12111GameTestOverlayFiles(false)
+
+                // Older project revisions copied a fat GameTest runtime JAR into this
+                // directory. Remove it before FG7 starts, otherwise a stale extraction
+                // would recreate the old split-package module conflict.
+                File modsDir = rootProject.file("run/${targetId}/gameTestServer/mods")
+                if (modsDir.isDirectory()) {
+                    fileTree(modsDir) {
+                        include '*-gametest-runtime.jar'
+                    }.files.each { staleJar ->
+                        if (!staleJar.delete()) {
+                            throw new GradleException(
+                                    "Unable to remove stale Forge 1.21.11 GameTest runtime JAR: ${staleJar}")
+                        }
+                        println "Removed stale Forge 1.21.11 GameTest runtime JAR: ${staleJar.name}"
+                    }
+                }
+
+                File mainRoot = forge12111MainOutputRoot()
+                Set<File> gameTestRoots = new LinkedHashSet<>()
+                File gameTestResources = sourceSets.gameTest.output.resourcesDir
+                if (gameTestResources != null) {
+                    gameTestRoots.add(gameTestResources.canonicalFile)
+                }
+                sourceSets.gameTest.output.classesDirs.files.each { root ->
+                    gameTestRoots.add(root.canonicalFile)
+                }
+                gameTestRoots = gameTestRoots.findAll { it.isDirectory() } as LinkedHashSet<File>
+                if (gameTestRoots.isEmpty()) {
+                    throw new GradleException('Forge 1.21.11 GameTest output is empty.')
+                }
+
+                Map<String, File> overlayFiles = new LinkedHashMap<>()
+                gameTestRoots.each { root ->
+                    root.eachFileRecurse(groovy.io.FileType.FILES) { sourceFile ->
+                        String relativePath = root.toPath().relativize(sourceFile.toPath()).toString()
+                                .replace(File.separatorChar, '/' as char)
+                        if (overlayFiles.containsKey(relativePath)) {
+                            throw new GradleException(
+                                    "Duplicate Forge 1.21.11 GameTest output path: ${relativePath}")
+                        }
+                        overlayFiles[relativePath] = sourceFile
+                    }
+                }
+                if (overlayFiles.isEmpty()) {
+                    throw new GradleException('Forge 1.21.11 GameTest output contains no files.')
+                }
+
+                overlayFiles.each { relativePath, sourceFile ->
+                    File destination = new File(mainRoot, relativePath)
+                    if (destination.exists()) {
+                        throw new GradleException(
+                                "Forge 1.21.11 GameTest overlay conflicts with production output: ${relativePath}")
+                    }
+                }
+
+                File manifest = forge12111OverlayManifest.get().asFile
+                manifest.parentFile.mkdirs()
+                manifest.setText(overlayFiles.keySet().join('\n') + '\n', 'UTF-8')
+
+                overlayFiles.each { relativePath, sourceFile ->
+                    File destination = new File(mainRoot, relativePath)
+                    destination.parentFile.mkdirs()
+                    java.nio.file.Files.copy(sourceFile.toPath(), destination.toPath(),
+                            java.nio.file.StandardCopyOption.COPY_ATTRIBUTES)
+                }
+
+                [
+                        'META-INF/mods.toml',
+                        'fr/vanillainstincts/VanillaInstincts.class',
+                        'fr/vanillainstincts/testcompat/VanillaInstinctsGameTestBootstrap.class',
+                        'data/vanillainstincts/structure/empty.nbt'
+                ].each { relativePath ->
+                    if (!new File(mainRoot, relativePath).isFile()) {
+                        throw new GradleException(
+                                "Forge 1.21.11 unified GameTest root is missing: ${relativePath}")
+                    }
+                }
+                println "Forge 1.21.11 unified GameTest mod ready: ${mainRoot} (${overlayFiles.size()} test files overlaid)"
+            }
+        }
+
+        if (minecraftVersion == '1.21.5') {
+            doFirst {
+                File report = rootProject.file(
+                        "run/${targetId}/gameTestServer/gametest-results.xml")
+                if (report.exists() && !report.delete()) {
+                    throw new GradleException(
+                            "Unable to remove stale GameTest report for ${targetId}: ${report}")
+                }
+                println "Forge 1.21.5 GameTest bridge armed: Forge/FML first, then net.minecraft.gametest.Main (${gameTestNamespace}:*)"
+            }
+        }
+
+        if (minecraftVersion == '1.21.6') {
+            doFirst {
+                File report = rootProject.file(
+                        "run/${targetId}/gameTestServer/gametest-results.xml")
+                if (report.exists() && !report.delete()) {
+                    throw new GradleException(
+                            "Unable to remove stale GameTest report for ${targetId}: ${report}")
+                }
+                println "Forge 1.21.6 GameTest bridge armed: Forge/FML first, then net.minecraft.gametest.Main (${gameTestNamespace}:*)"
+            }
+        }
+
+        if (minecraftVersion in ['1.21.7', '1.21.8', '1.21.9', '1.21.10', '1.21.11']) {
+            doFirst {
+                println "Forge ${minecraftVersion} native GameTest runner armed (${gameTestNamespace}:*)"
+            }
+        }
+
+        doLast {
+            File latestLog = rootProject.file("run/${targetId}/gameTestServer/logs/latest.log")
+            if (!latestLog.isFile()) {
+                throw new GradleException("GameTest server produced no latest.log for ${targetId}.")
+            }
+
+            String logText = latestLog.getText('UTF-8')
+            List<String> fatalMarkers = [
+                    'mods that were not found',
+                    'Failed to initialize mod containers',
+                    'Failed to start the minecraft server',
+                    'Failed to load vanilla datapack',
+                    'Mod Loading has failed',
+                    'Mixin apply failed',
+                    'Critical injection failure',
+                    'InjectionError'
+            ]
+            String fatalMarker = fatalMarkers.find { logText.contains(it) }
+            if (fatalMarker != null) {
+                throw new GradleException(
+                        "GameTest server failed before executing tests for ${targetId}: ${fatalMarker}")
+            }
+
+            if (minecraftVersion == '1.21.5') {
+                if (!logText.contains('Vanilla Instincts Forge 1.21.5 GameTest bridge: FML initialized')) {
+                    throw new GradleException(
+                            "Forge 1.21.5 never reached the post-FML GameTest bridge for ${targetId}.")
+                }
+                File report = rootProject.file(
+                        "run/${targetId}/gameTestServer/gametest-results.xml")
+                if (!report.isFile()) {
+                    throw new GradleException(
+                            "Minecraft 1.21.5 GameTest Main produced no XML report for ${targetId}.")
+                }
+                String reportText = report.getText('UTF-8')
+                int testCaseCount = reportText.count('<testcase')
+                if (testCaseCount != 600) {
+                    throw new GradleException(
+                            "Expected 600 Forge 1.21.5 GameTest results, found ${testCaseCount}.")
+                }
+                if (reportText.contains('<failure') || reportText.contains('<error')) {
+                    throw new GradleException(
+                            "Forge 1.21.5 GameTest report contains failures or errors.")
+                }
+                println "Forge 1.21.5 GameTests verified: ${testCaseCount}/600 passed"
+            } else if (minecraftVersion == '1.21.6') {
+                if (!logText.contains('Vanilla Instincts Forge 1.21.6 GameTest bridge: FML initialized')) {
+                    throw new GradleException(
+                            "Forge 1.21.6 never reached the post-FML GameTest bridge for ${targetId}.")
+                }
+                File report = rootProject.file(
+                        "run/${targetId}/gameTestServer/gametest-results.xml")
+                if (!report.isFile()) {
+                    throw new GradleException(
+                            "Minecraft 1.21.6 GameTest Main produced no XML report for ${targetId}.")
+                }
+                String reportText = report.getText('UTF-8')
+                int testCaseCount = reportText.count('<testcase')
+                if (testCaseCount != 600) {
+                    throw new GradleException(
+                            "Expected 600 Forge 1.21.6 GameTest results, found ${testCaseCount}.")
+                }
+                if (reportText.contains('<failure') || reportText.contains('<error')) {
+                    throw new GradleException(
+                            "Forge 1.21.6 GameTest report contains failures or errors.")
+                }
+                println "Forge 1.21.6 GameTests verified: ${testCaseCount}/600 passed"
+            } else if (minecraftVersion in ['1.21.7', '1.21.8', '1.21.9', '1.21.10', '1.21.11']) {
+                // Forge 57+ drives the modern GameTest runner directly after FML
+                // initialization. Validate the native runner instead of the legacy
+                // 1.21.5/1.21.6 post-FML bridge/XML-report path.
+                if (!logText.contains("Registered 600 Vanilla Instincts ${minecraftVersion} GameTest functions")) {
+                    throw new GradleException(
+                            "Forge ${minecraftVersion} did not register all 600 Vanilla Instincts GameTests for ${targetId}.")
+                }
+                if (!logText.contains('GAME TESTS COMPLETE')) {
+                    throw new GradleException(
+                            "Forge ${minecraftVersion} GameTests did not reach completion for ${targetId}.")
+                }
+                if (!logText.contains('All 601 required tests passed')) {
+                    throw new GradleException(
+                            "Forge ${minecraftVersion} did not report all 601 required GameTests passing for ${targetId}.")
+                }
+                println "Forge ${minecraftVersion} native GameTests verified: 600 mod tests registered; 601/601 required tests passed"
+            } else {
+                // The legacy vanilla GameTestServer logs this completion banner after
+                // the registered batch has actually finished. This prevents another
+                // false BUILD SUCCESSFUL when FML exits cleanly before running tests.
+                if (!logText.contains('GAME TESTS COMPLETE')) {
+                    throw new GradleException(
+                            "GameTest server exited without completing the registered tests for ${targetId}.")
+                }
+            }
+        }
+    }
+
+    tasks.register('verifyGameTestLayout') {
+        group = 'verification'
+        description = "Verify the shared GameTest layout for ${targetId}."
+        dependsOn tasks.named('compileGameTestJava')
+
+        doLast {
+            File gameTestJava = new File(gameTestSuite,
+                    'src/gameTest/java/fr/vanillainstincts/gametest')
+            List<File> sources = fileTree(gameTestJava) { include '**/*.java' }.files.toList()
+            if (sources.size() != 46) {
+                throw new GradleException("Expected 46 shared Forge GameTest classes, found ${sources.size()}.")
+            }
+            List<File> numbered = sources.findAll { source ->
+                source.name ==~ /.*GameTests[0-9]+\.java/
+            }
+            if (!numbered.isEmpty()) {
+                throw new GradleException('Numbered GameTest classes are not allowed: '
+                        + numbered*.name.join(', '))
+            }
+            if (sources.any { it.getText('UTF-8').contains('net.neoforged.neoforge.gametest') }) {
+                throw new GradleException('NeoForge GameTest annotations leaked into Forge tests.')
+            }
+
+            File sharedTemplate = new File(gameTestSuite,
+                    'src/gameTest/resources/data/vanillainstincts/structure/empty.nbt')
+            if (!sharedTemplate.isFile()) {
+                throw new GradleException('Shared GameTest template is missing.')
+            }
+            int structureCount = fileTree(new File(gameTestSuite, 'src/gameTest/resources/data')) {
+                include '**/structure/empty.nbt'
+            }.files.size()
+            if (structureCount != 1) {
+                throw new GradleException(
+                        "Expected one shared GameTest structure, found ${structureCount}.")
+            }
+            if (!registryGameTests) {
+                File forge51TemplateAlias = new File(gameTestSuite,
+                        'src/gameTest/resources/data/minecraft/structure/vanillainstincts.empty.nbt')
+                if (!forge51TemplateAlias.isFile()
+                        || !java.util.Arrays.equals(forge51TemplateAlias.bytes, sharedTemplate.bytes)) {
+                    throw new GradleException(
+                            'Forge 51 GameTest compatibility template alias is missing or inconsistent.')
+                }
+            } else {
+                File bootstrap = new File(gameTestSuite,
+                        'src/gameTest/java/fr/vanillainstincts/testcompat/VanillaInstinctsGameTestBootstrap.java')
+                if (!bootstrap.isFile()) {
+                    throw new GradleException('Forge registry GameTest bootstrap is missing.')
+                }
+                if (forgeGradle7) {
+                    Set<String> productionPackages = new LinkedHashSet<>()
+                    [
+                            new File(minecraftFamily, 'src/main/java'),
+                            new File(loaderAdapter, 'src/main/java')
+                    ].each { root ->
+                        fileTree(root) { include '**/*.java' }.files.each { source ->
+                            def packageMatcher = source.getText('UTF-8') =~ /(?m)^package\s+([^;]+);/
+                            if (packageMatcher.find()) {
+                                productionPackages.add(packageMatcher.group(1))
+                            }
+                        }
+                    }
+                    Set<String> gameTestPackages = new LinkedHashSet<>()
+                    fileTree(new File(gameTestSuite, 'src/gameTest/java')) {
+                        include '**/*.java'
+                    }.files.each { source ->
+                        def packageMatcher = source.getText('UTF-8') =~ /(?m)^package\s+([^;]+);/
+                        if (packageMatcher.find()) {
+                            gameTestPackages.add(packageMatcher.group(1))
+                        }
+                    }
+                    Set<String> splitPackages = new LinkedHashSet<>(productionPackages)
+                    splitPackages.retainAll(gameTestPackages)
+                    if (!splitPackages.isEmpty()) {
+                        throw new GradleException(
+                                'Forge 1.21.11 production/GameTest source sets contain split packages: '
+                                        + splitPackages.join(', '))
+                    }
+                }
+                int testInstanceCount = fileTree(new File(gameTestSuite,
+                        'src/gameTest/resources/data/vanillainstincts/test_instance')) {
+                    include '**/*.json'
+                }.files.size()
+                if (testInstanceCount != 600) {
+                    throw new GradleException(
+                            "Expected 600 Forge registry test instances, found ${testInstanceCount}.")
+                }
+                int environmentCount = fileTree(new File(gameTestSuite,
+                        'src/gameTest/resources/data/vanillainstincts/test_environment')) {
+                    include '**/*.json'
+                }.files.size()
+                if (environmentCount != 46) {
+                    throw new GradleException(
+                            "Expected 46 Forge registry test environments, found ${environmentCount}.")
+                }
+            }
+        }
+    }
+
+    tasks.register('verifyProductionTestManifest') {
+        group = 'verification'
+        description = "Verify GameTest registration for ${targetId}."
+
+        doLast {
+            File gameTestRoot = new File(gameTestSuite,
+                    'src/gameTest/java/fr/vanillainstincts/gametest')
+            List<File> sources = fileTree(gameTestRoot) {
+                include '**/*.java'
+            }.files.toList().sort { left, right -> left.path <=> right.path }
+            int gameTestCount = sources.sum { source ->
+                (source.getText('UTF-8') =~ /@GameTest\(/).count
+            } as int
+            if (gameTestCount != 600) {
+                throw new GradleException("Expected exactly 600 GameTests, found ${gameTestCount}.")
+            }
+
+            List<File> unregisteredSources = sources.findAll { source ->
+                String text = source.getText('UTF-8')
+                text.contains('@GameTest(')
+                        && !text.contains('@GameTestHolder(VanillaInstincts.MOD_ID)')
+            }
+            if (!unregisteredSources.isEmpty()) {
+                throw new GradleException('GameTest sources missing @GameTestHolder: '
+                        + unregisteredSources*.name.join(', '))
+            }
+
+            if (registryGameTests) {
+                Set<String> namespaces = new LinkedHashSet<>()
+                sources.each { source ->
+                    def matcher = source.getText('UTF-8') =~ /templateNamespace = "([^"]+)"/
+                    matcher.each { match -> namespaces.add(match[1]) }
+                }
+                if (namespaces != [gameTestNamespace] as LinkedHashSet<String>) {
+                    throw new GradleException(
+                            "Forge registry GameTests must use namespace ${gameTestNamespace}: ${namespaces}.")
+                }
+            } else {
+                List<File> legacyNamespaceSources = sources.findAll { source ->
+                    source.getText('UTF-8').contains('templateNamespace =')
+                }
+                if (!legacyNamespaceSources.isEmpty()) {
+                    throw new GradleException('Forge 1.21 GameTests must get their namespace from @GameTestHolder: '
+                            + legacyNamespaceSources*.name.join(', '))
+                }
+
+                File structureRoot = new File(gameTestSuite,
+                        'src/gameTest/resources/data/vanillainstincts/structure')
+                List<File> missingAliases = sources.findAll { source ->
+                    !new File(structureRoot, source.name.replace('.java', '').toLowerCase(Locale.ROOT)
+                            + '.empty.nbt').isFile()
+                }
+                if (!missingAliases.isEmpty()) {
+                    throw new GradleException('Forge 1.21 GameTest template aliases are missing for: '
+                            + missingAliases*.name.join(', '))
+                }
+            }
+        }
+    }
+}
+
+tasks.named('check').configure {
+    dependsOn tasks.named('verifyTargetJar')
+    if (gameTestsEnabled) {
+        dependsOn tasks.named('verifyGameTestLayout')
+        dependsOn tasks.named('verifyProductionTestManifest')
+    }
+}

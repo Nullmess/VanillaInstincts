@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:movement_policy/expired_mission_removes_run",
+  "environment": "vanillainstincts:movement_policy",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

@@ -1,0 +1,15 @@
+{
+  "priority": 25,
+  "animals": "minecraft:chicken",
+  "needs_shelter": true,
+  "needs_nearby_water": false,
+  "needs_herd": true,
+  "needs_rest": true,
+  "hot_temperature": 1.15,
+  "rest_start": 11500,
+  "rest_end": 23000,
+  "stress_threshold": 56,
+  "recovery_threshold": 70,
+  "recovery_ticks": 280,
+  "breeding_min_score": 50
+}

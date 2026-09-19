@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:golem_ceremony_nether/second_daily_build_is_blocked",
+  "environment": "vanillainstincts:golem_ceremony_nether",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

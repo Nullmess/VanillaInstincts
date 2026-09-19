@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:village_building/vanilla_farm_belongs_to_farmer",
+  "environment": "vanillainstincts:village_building",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

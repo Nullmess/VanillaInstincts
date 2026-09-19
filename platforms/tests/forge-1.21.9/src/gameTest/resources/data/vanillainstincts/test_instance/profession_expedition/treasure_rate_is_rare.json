@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:profession_expedition/treasure_rate_is_rare",
+  "environment": "vanillainstincts:profession_expedition",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

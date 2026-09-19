@@ -1,0 +1,299 @@
+package fr.vanillainstincts.ai;
+
+import fr.vanillainstincts.core.config.ConfigSnapshot;
+import fr.vanillainstincts.core.config.RuntimeConfig;
+import fr.vanillainstincts.core.performance.AdaptiveLoadPolicy;
+import fr.vanillainstincts.core.performance.AdaptiveLoadState;
+import fr.vanillainstincts.core.performance.LoadTier;
+import fr.vanillainstincts.core.performance.SchedulerPriority;
+import fr.vanillainstincts.core.performance.SchedulerTelemetry;
+import fr.vanillainstincts.core.rules.PerformanceRules;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.WeakHashMap;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.player.Player;
+
+/** Shared adaptive scheduler and internal performance telemetry. */
+public final class VanillaInstinctsScheduler {
+    private static final Map<ServerLevel, TickBudget> BUDGETS =
+            new WeakHashMap<>();
+
+    private VanillaInstinctsScheduler() {
+    }
+
+    public static boolean isScheduled(Entity entity, int intervalTicks) {
+        if (entity == null) return false;
+        int interval = Math.max(1, intervalTicks);
+        if (entity.level() instanceof ServerLevel level) {
+            TickBudget budget;
+            SchedulerPriority priority;
+            synchronized (BUDGETS) {
+                budget = current(level);
+                priority = priorityFor(level, entity, budget);
+            }
+            interval = AdaptiveLoadPolicy.cadence(interval,
+                    budget.loadState.tier(), priority);
+        }
+        return Math.floorMod(entity.level().getGameTime() + entity.getId(),
+                interval) == 0L;
+    }
+
+    public static boolean claim(ServerLevel level) {
+        return claim(level, 1, SchedulerPriority.NORMAL);
+    }
+
+    public static boolean claim(ServerLevel level, int cost) {
+        return claim(level, cost, SchedulerPriority.NORMAL);
+    }
+
+    public static boolean claim(ServerLevel level, Entity entity, int cost) {
+        if (level == null || entity == null) return false;
+        synchronized (BUDGETS) {
+            TickBudget budget = current(level);
+            return claimLocked(budget, cost,
+                    priorityFor(level, entity, budget));
+        }
+    }
+
+    public static boolean claim(ServerLevel level, int cost,
+                                SchedulerPriority priority) {
+        if (level == null) return false;
+        synchronized (BUDGETS) {
+            return claimLocked(current(level), cost, priority);
+        }
+    }
+
+    public static long beginWork() {
+        return System.nanoTime();
+    }
+
+    public static void recordWork(ServerLevel level, long startedAtNanos) {
+        if (level == null || startedAtNanos <= 0L) return;
+        long elapsed = Math.max(0L, System.nanoTime() - startedAtNanos);
+        synchronized (BUDGETS) {
+            TickBudget budget = current(level);
+            budget.spentNanos = saturatedAdd(budget.spentNanos, elapsed);
+        }
+    }
+
+    public static int usedCost(ServerLevel level) {
+        synchronized (BUDGETS) {
+            return current(level).usedCost;
+        }
+    }
+
+    public static int rejectedCost(ServerLevel level) {
+        synchronized (BUDGETS) {
+            return current(level).rejectedCost;
+        }
+    }
+
+    public static int remainingCost(ServerLevel level) {
+        synchronized (BUDGETS) {
+            TickBudget budget = current(level);
+            return Math.max(0, budget.effectiveCostBudget
+                    - budget.usedCost);
+        }
+    }
+
+    public static LoadTier loadTier(ServerLevel level) {
+        synchronized (BUDGETS) {
+            return current(level).loadState.tier();
+        }
+    }
+
+    public static SchedulerPriority priority(ServerLevel level,
+                                             Entity entity) {
+        if (level == null || entity == null) {
+            return SchedulerPriority.BACKGROUND;
+        }
+        synchronized (BUDGETS) {
+            TickBudget budget = current(level);
+            return priorityFor(level, entity, budget);
+        }
+    }
+
+    public static int precisionLimit(ServerLevel level, Entity entity,
+                                     int configuredLimit, int minimum) {
+        if (level == null) return Math.max(0, configuredLimit);
+        synchronized (BUDGETS) {
+            TickBudget budget = current(level);
+            SchedulerPriority priority = entity == null
+                    ? SchedulerPriority.NORMAL
+                    : priorityFor(level, entity, budget);
+            return AdaptiveLoadPolicy.candidateLimit(configuredLimit,
+                    minimum, budget.loadState.tier(), priority);
+        }
+    }
+
+    public static int precisionLimit(ServerLevel level, int configuredLimit,
+                                     int minimum) {
+        return precisionLimit(level, null, configuredLimit, minimum);
+    }
+
+    public static int heavyTaskMultiplier(ServerLevel level) {
+        synchronized (BUDGETS) {
+            return current(level).loadState.tier().heavyTaskMultiplier();
+        }
+    }
+
+    public static SchedulerTelemetry telemetry(ServerLevel level) {
+        synchronized (BUDGETS) {
+            TickBudget budget = current(level);
+            return new SchedulerTelemetry(budget.loadState.tier(),
+                    budget.loadState.averageTickNanos(),
+                    budget.spentNanos, budget.effectiveCostBudget,
+                    budget.effectiveTimeBudgetNanos, budget.usedCost,
+                    budget.acceptedClaims, budget.rejectedClaims,
+                    budget.rejectedCost);
+        }
+    }
+
+    public static int cadenceMultiplier(long tickNanos) {
+        long target = PerformanceRules.TARGET_TICK_NANOS;
+        if (tickNanos <= target) return 1;
+        long ratio = (tickNanos + target - 1L) / target;
+        return (int) Math.max(1L, Math.min(16L, ratio));
+    }
+
+    public static void clearLevel(ServerLevel level) {
+        synchronized (BUDGETS) {
+            BUDGETS.remove(level);
+        }
+    }
+
+    private static boolean claimLocked(TickBudget budget, int cost,
+                                       SchedulerPriority priority) {
+        int normalized = Math.max(1, cost);
+        SchedulerPriority safePriority = priority == null
+                ? SchedulerPriority.NORMAL : priority;
+        ConfigSnapshot config = budget.configSnapshot == null
+                ? RuntimeConfig.snapshot() : budget.configSnapshot;
+        boolean timeAvailable = budget.spentNanos
+                < budget.effectiveTimeBudgetNanos;
+        boolean costAvailable = AdaptiveLoadPolicy.reservationAllowed(
+                budget.usedCost, normalized, budget.effectiveCostBudget,
+                safePriority, config.urgentBudgetReserve());
+        if (!timeAvailable || !costAvailable) {
+            budget.rejectedClaims++;
+            budget.rejectedCost = saturatedAdd(budget.rejectedCost,
+                    normalized);
+            return false;
+        }
+        budget.acceptedClaims++;
+        budget.usedCost = saturatedAdd(budget.usedCost, normalized);
+        return true;
+    }
+
+    private static TickBudget current(ServerLevel level) {
+        TickBudget budget = BUDGETS.computeIfAbsent(level,
+                ignored -> new TickBudget());
+        long gameTime = level.getGameTime();
+        if (budget.gameTime == gameTime) return budget;
+
+        long now = System.nanoTime();
+        ConfigSnapshot config = RuntimeConfig.snapshot();
+        budget.configSnapshot = config;
+        updateLoad(budget, gameTime, now, config);
+        LoadTier tier = config.adaptiveLoadShedding()
+                ? budget.loadState.tier() : LoadTier.NORMAL;
+        budget.gameTime = gameTime;
+        budget.lastTickNano = now;
+        budget.spentNanos = 0L;
+        budget.usedCost = 0;
+        budget.rejectedCost = 0;
+        budget.acceptedClaims = 0;
+        budget.rejectedClaims = 0;
+        budget.priorities.clear();
+        budget.effectiveCostBudget = AdaptiveLoadPolicy
+                .effectiveCostBudget(
+                        config.maxDecisionCostPerLevelTick(), tier,
+                        config.minimumAdaptiveBudgetFactor());
+        budget.effectiveTimeBudgetNanos = AdaptiveLoadPolicy
+                .effectiveTimeBudget(config.maxAiNanosPerLevelTick(), tier,
+                        config.minimumAdaptiveBudgetFactor());
+        return budget;
+    }
+
+    private static void updateLoad(TickBudget budget, long gameTime,
+                                   long now, ConfigSnapshot config) {
+        if (budget.lastTickNano == 0L) {
+            budget.loadState = AdaptiveLoadState.initial();
+            return;
+        }
+        long gameTimeGap = budget.gameTime == Long.MIN_VALUE
+                ? 1L : Math.max(1L, gameTime - budget.gameTime);
+        long observed = Math.max(1L, now - budget.lastTickNano);
+        if (gameTimeGap > 1L
+                || observed > config.overloadTickNanos() * 4L) {
+            observed = config.targetTickNanos();
+        }
+        if (!config.adaptiveLoadShedding()) {
+            long average = AdaptiveLoadPolicy.smooth(
+                    budget.loadState.averageTickNanos(), observed);
+            budget.loadState = new AdaptiveLoadState(average,
+                    LoadTier.NORMAL, 0);
+            return;
+        }
+        budget.loadState = AdaptiveLoadPolicy.sample(budget.loadState,
+                observed, budget.acceptedClaims, budget.rejectedClaims,
+                config.targetTickNanos(), config.overloadTickNanos(),
+                config.loadRecoverySamples());
+    }
+
+    private static SchedulerPriority priorityFor(ServerLevel level,
+                                                 Entity entity,
+                                                 TickBudget budget) {
+        SchedulerPriority cached = budget.priorities.get(entity.getId());
+        if (cached != null) return cached;
+        boolean playerCombat = entity instanceof Mob mob
+                && mob.getTarget() instanceof Player;
+        Player nearestPlayer = level.getNearestPlayer(entity.getX(),
+                entity.getY(), entity.getZ(),
+                PerformanceRules.ACTIVE_PLAYER_DISTANCE,
+                candidate -> candidate instanceof Player player
+                        && player.isAlive() && !player.isSpectator());
+        double nearestDistanceSqr = nearestPlayer == null
+                ? Double.POSITIVE_INFINITY
+                : entity.distanceToSqr(nearestPlayer);
+        SchedulerPriority priority = AdaptiveLoadPolicy.priority(
+                playerCombat, nearestDistanceSqr,
+                PerformanceRules.NEAR_PLAYER_DISTANCE,
+                PerformanceRules.ACTIVE_PLAYER_DISTANCE);
+        budget.priorities.put(entity.getId(), priority);
+        return priority;
+    }
+
+    private static int saturatedAdd(int left, int right) {
+        if (right > 0 && left > Integer.MAX_VALUE - right) {
+            return Integer.MAX_VALUE;
+        }
+        return left + right;
+    }
+
+    private static long saturatedAdd(long left, long right) {
+        if (right > 0L && left > Long.MAX_VALUE - right) {
+            return Long.MAX_VALUE;
+        }
+        return left + right;
+    }
+
+    private static final class TickBudget {
+        private long gameTime = Long.MIN_VALUE;
+        private long lastTickNano;
+        private AdaptiveLoadState loadState = AdaptiveLoadState.initial();
+        private ConfigSnapshot configSnapshot;
+        private long spentNanos;
+        private int effectiveCostBudget = 1;
+        private long effectiveTimeBudgetNanos = 1L;
+        private int usedCost;
+        private int rejectedCost;
+        private int acceptedClaims;
+        private int rejectedClaims;
+        private final Map<Integer, SchedulerPriority> priorities =
+                new HashMap<>();
+    }
+}

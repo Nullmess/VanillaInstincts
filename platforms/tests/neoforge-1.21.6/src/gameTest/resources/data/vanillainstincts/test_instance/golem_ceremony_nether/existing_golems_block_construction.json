@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:golem_ceremony_nether/existing_golems_block_construction",
+  "environment": "vanillainstincts:golem_ceremony_nether",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

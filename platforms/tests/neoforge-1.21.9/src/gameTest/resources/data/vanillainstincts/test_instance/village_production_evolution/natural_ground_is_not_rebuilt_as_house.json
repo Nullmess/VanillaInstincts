@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:village_production_evolution/natural_ground_is_not_rebuilt_as_house",
+  "environment": "vanillainstincts:village_production_evolution",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

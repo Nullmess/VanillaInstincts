@@ -1,0 +1,5 @@
+{
+  "priority": 100,
+  "professions": ["minecraft:fisherman"],
+  "adjacent_water_bonus": 1.75
+}

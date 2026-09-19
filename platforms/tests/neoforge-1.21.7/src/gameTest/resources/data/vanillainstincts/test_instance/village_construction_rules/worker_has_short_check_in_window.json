@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:village_construction_rules/worker_has_short_check_in_window",
+  "environment": "vanillainstincts:village_construction_rules",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

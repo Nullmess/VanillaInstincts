@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:welfare_data_driven_behavior/chicken_welfare_can_disable_water_need",
+  "environment": "vanillainstincts:welfare_data_driven_behavior",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

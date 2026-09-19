@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:persistence_migration/migrates_legacy_entity_prefix",
+  "environment": "vanillainstincts:persistence_migration",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

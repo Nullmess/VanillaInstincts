@@ -1,0 +1,17 @@
+{
+  "priority": 105,
+  "entities": ["minecraft:spider", "minecraft:cave_spider"],
+  "visual_range": 34.0,
+  "hearing_multiplier": 1.08,
+  "night_visual_multiplier": 1.20,
+  "rain_visual_multiplier": 0.96,
+  "sneaking_visual_multiplier": 0.65,
+  "invisible_visual_multiplier": 0.46,
+  "blindness_range": 4.0,
+  "sneaking_hearing_multiplier": 0.70,
+  "easy_multiplier": 0.90,
+  "normal_multiplier": 1.0,
+  "hard_multiplier": 1.14,
+  "last_seen_ticks": 150,
+  "last_heard_ticks": 105
+}

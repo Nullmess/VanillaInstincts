@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:profession_stock/repair_amount_is_bounded",
+  "environment": "vanillainstincts:profession_stock",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:nether_mission_persistence/disconnect_grace_does_not_retreat_early",
+  "environment": "vanillainstincts:nether_mission_persistence",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

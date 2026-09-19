@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:village_schedule_economy/larger_food_gift_pays_more",
+  "environment": "vanillainstincts:village_schedule_economy",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

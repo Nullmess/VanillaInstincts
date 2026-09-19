@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:dimension_beds/end_fixed_time_refusal_is_cleared",
+  "environment": "vanillainstincts:dimension_beds",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

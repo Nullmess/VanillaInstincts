@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:village_crafting_market/interrupted_batch_can_refund_inputs",
+  "environment": "vanillainstincts:village_crafting_market",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

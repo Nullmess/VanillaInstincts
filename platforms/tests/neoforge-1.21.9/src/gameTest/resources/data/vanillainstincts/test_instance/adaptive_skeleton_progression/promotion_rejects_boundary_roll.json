@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:adaptive_skeleton_progression/promotion_rejects_boundary_roll",
+  "environment": "vanillainstincts:adaptive_skeleton_progression",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

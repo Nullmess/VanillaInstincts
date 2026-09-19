@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:recovered_trade/farmer_accepts_food",
+  "environment": "vanillainstincts:recovered_trade",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

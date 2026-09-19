@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:herd_pack_farmer/missing_wolf_is_rejected",
+  "environment": "vanillainstincts:herd_pack_farmer",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

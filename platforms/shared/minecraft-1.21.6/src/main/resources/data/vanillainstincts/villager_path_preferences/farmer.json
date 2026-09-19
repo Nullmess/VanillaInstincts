@@ -1,0 +1,8 @@
+{
+  "priority": 100,
+  "professions": ["minecraft:farmer"],
+  "walk_on": {
+    "minecraft:farmland": 2.75,
+    "minecraft:dirt_path": 1.25
+  }
+}

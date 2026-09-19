@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:possession_catalog/dragon_uses_native_phase_movement",
+  "environment": "vanillainstincts:possession_catalog",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

@@ -1,0 +1,17 @@
+{
+  "priority": -100,
+  "entities": ["*"],
+  "visual_range": 40.0,
+  "hearing_multiplier": 1.0,
+  "night_visual_multiplier": 1.05,
+  "rain_visual_multiplier": 0.88,
+  "sneaking_visual_multiplier": 0.72,
+  "invisible_visual_multiplier": 0.55,
+  "blindness_range": 4.0,
+  "sneaking_hearing_multiplier": 0.72,
+  "easy_multiplier": 0.90,
+  "normal_multiplier": 1.0,
+  "hard_multiplier": 1.12,
+  "last_seen_ticks": 140,
+  "last_heard_ticks": 100
+}

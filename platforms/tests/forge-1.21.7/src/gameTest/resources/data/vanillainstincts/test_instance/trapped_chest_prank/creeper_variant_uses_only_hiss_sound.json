@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:trapped_chest_prank/creeper_variant_uses_only_hiss_sound",
+  "environment": "vanillainstincts:trapped_chest_prank",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

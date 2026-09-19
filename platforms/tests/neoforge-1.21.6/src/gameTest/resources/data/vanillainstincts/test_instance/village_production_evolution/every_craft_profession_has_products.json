@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:village_production_evolution/every_craft_profession_has_products",
+  "environment": "vanillainstincts:village_production_evolution",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

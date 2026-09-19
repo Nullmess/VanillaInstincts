@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:cleric_service_demand/cleric_wants_brewing_materials",
+  "environment": "vanillainstincts:cleric_service_demand",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

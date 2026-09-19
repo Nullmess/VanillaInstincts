@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:village_production_evolution/diamond_armor_costs_more_than_iron",
+  "environment": "vanillainstincts:village_production_evolution",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:nether_mission_combat/no_crystal_is_detected",
+  "environment": "vanillainstincts:nether_mission_combat",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

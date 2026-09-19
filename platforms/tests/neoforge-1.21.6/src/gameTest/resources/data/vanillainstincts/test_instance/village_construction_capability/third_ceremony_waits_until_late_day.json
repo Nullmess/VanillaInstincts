@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:village_construction_capability/third_ceremony_waits_until_late_day",
+  "environment": "vanillainstincts:village_construction_capability",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

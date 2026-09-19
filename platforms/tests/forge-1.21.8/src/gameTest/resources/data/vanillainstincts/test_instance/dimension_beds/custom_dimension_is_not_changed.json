@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:dimension_beds/custom_dimension_is_not_changed",
+  "environment": "vanillainstincts:dimension_beds",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

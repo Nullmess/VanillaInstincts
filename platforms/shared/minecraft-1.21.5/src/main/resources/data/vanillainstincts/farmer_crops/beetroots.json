@@ -1,0 +1,9 @@
+{
+  "priority": 100,
+  "item": "minecraft:beetroot_seeds",
+  "crop": "minecraft:beetroots",
+  "plant_on": ["#vanillainstincts:farmer_plantable_on"],
+  "age_property": "age",
+  "mature_age": 3,
+  "replant": true
+}

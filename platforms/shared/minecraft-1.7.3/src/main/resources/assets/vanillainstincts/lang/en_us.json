@@ -1,0 +1,23 @@
+{
+  "effect.vanillainstincts.grand_master": "Grand Master",
+  "ui.vanillainstincts.grand_master.rank": "Grand Master",
+  "message.vanillainstincts.possession.disabled": "Mob possession is disabled on this server.",
+  "message.vanillainstincts.possession.spectator_only": "You must be in Spectator mode to possess a mob.",
+  "message.vanillainstincts.possession.invalid_target": "That entity cannot be possessed.",
+  "message.vanillainstincts.possession.unsupported_target": "This vanilla mob is not in the possession catalog.",
+  "message.vanillainstincts.possession.modded_disabled": "Possession of modded mobs is disabled on this server.",
+  "message.vanillainstincts.possession.already_controlled": "That mob is already controlled by another spectator.",
+  "message.vanillainstincts.possession.started": "Now controlling %s.",
+  "message.vanillainstincts.possession.stopped": "Mob control released; you are back in your player in Spectator mode.",
+  "message.vanillainstincts.possession.invalid_state": "Possession stopped because its state is no longer valid.",
+  "message.vanillainstincts.possession.mob_removed": "Possession stopped because the mob left the world.",
+  "message.vanillainstincts.possession.inventory_disabled": "Mob inventory access is disabled on this server.",
+  "container.vanillainstincts.mob_inventory": "%s — mob inventory",
+  "hud.vanillainstincts.possession.title": "Control: %s",
+  "hud.vanillainstincts.possession.health": "HP: %s/%s  •  Hearts: %s/%s",
+  "hud.vanillainstincts.possession.status": "Armor: %s  •  Air: %s/%s",
+  "message.vanillainstincts.possession.camera_required": "Enter a mob with vanilla Spectator mode first, then run /vanillainstincts control.",
+  "hud.vanillainstincts.possession.hint": "/vanillainstincts control or Spectator to release • E inventory",
+  "message.vanillainstincts.possession.already_active": "You are already controlling this mob. Run /vanillainstincts control again to release it.",
+  "message.vanillainstincts.possession.returned_to_spectator": "Mob control released because you switched back to Spectator mode."
+}

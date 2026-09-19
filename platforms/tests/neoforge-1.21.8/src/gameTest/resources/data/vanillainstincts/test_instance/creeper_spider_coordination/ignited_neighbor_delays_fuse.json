@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:creeper_spider_coordination/ignited_neighbor_delays_fuse",
+  "environment": "vanillainstincts:creeper_spider_coordination",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

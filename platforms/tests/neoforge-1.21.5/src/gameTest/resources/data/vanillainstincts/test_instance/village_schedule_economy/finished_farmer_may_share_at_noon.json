@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:village_schedule_economy/finished_farmer_may_share_at_noon",
+  "environment": "vanillainstincts:village_schedule_economy",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:cleric_service_demand/brewing_pause_is_bounded",
+  "environment": "vanillainstincts:cleric_service_demand",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

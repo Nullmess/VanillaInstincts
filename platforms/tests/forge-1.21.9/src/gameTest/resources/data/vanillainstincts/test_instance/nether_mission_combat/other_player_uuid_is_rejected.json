@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:nether_mission_combat/other_player_uuid_is_rejected",
+  "environment": "vanillainstincts:nether_mission_combat",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

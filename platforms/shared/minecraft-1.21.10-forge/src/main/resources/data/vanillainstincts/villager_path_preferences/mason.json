@@ -1,0 +1,10 @@
+{
+  "priority": 100,
+  "professions": ["minecraft:mason"],
+  "walk_on": {
+    "minecraft:cobblestone": 1.35,
+    "minecraft:stone": 1.35,
+    "minecraft:stone_bricks": 1.35,
+    "minecraft:mossy_cobblestone": 1.35
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:pillager_loot/unrelated_block_is_rejected",
+  "environment": "vanillainstincts:pillager_loot",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:village_construction_capability/generic_builder_may_place_iron",
+  "environment": "vanillainstincts:village_construction_capability",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

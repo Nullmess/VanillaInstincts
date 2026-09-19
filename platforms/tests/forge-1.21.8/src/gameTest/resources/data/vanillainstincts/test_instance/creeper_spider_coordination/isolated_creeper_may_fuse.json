@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:creeper_spider_coordination/isolated_creeper_may_fuse",
+  "environment": "vanillainstincts:creeper_spider_coordination",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

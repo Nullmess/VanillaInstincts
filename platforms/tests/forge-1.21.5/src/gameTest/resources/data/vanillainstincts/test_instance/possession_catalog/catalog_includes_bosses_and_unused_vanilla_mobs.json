@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:possession_catalog/catalog_includes_bosses_and_unused_vanilla_mobs",
+  "environment": "vanillainstincts:possession_catalog",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:pillager_loot/every_player_recovered_offer_has_one_use",
+  "environment": "vanillainstincts:pillager_loot",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

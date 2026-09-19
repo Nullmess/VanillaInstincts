@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:village_social_trade/recipient_can_recover_gift",
+  "environment": "vanillainstincts:village_social_trade",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

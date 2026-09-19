@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:creeper_spider_coordination/open_door_is_never_explosion_obstacle",
+  "environment": "vanillainstincts:creeper_spider_coordination",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

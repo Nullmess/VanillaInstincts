@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:village_alert_patrol/missing_adult_skips_adult_search",
+  "environment": "vanillainstincts:village_alert_patrol",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

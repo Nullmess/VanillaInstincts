@@ -1,0 +1,17 @@
+{
+  "priority": 120,
+  "entities": ["minecraft:enderman"],
+  "visual_range": 52.0,
+  "hearing_multiplier": 0.90,
+  "night_visual_multiplier": 1.08,
+  "rain_visual_multiplier": 0.72,
+  "sneaking_visual_multiplier": 0.75,
+  "invisible_visual_multiplier": 0.52,
+  "blindness_range": 5.0,
+  "sneaking_hearing_multiplier": 0.76,
+  "easy_multiplier": 0.92,
+  "normal_multiplier": 1.0,
+  "hard_multiplier": 1.12,
+  "last_seen_ticks": 180,
+  "last_heard_ticks": 90
+}

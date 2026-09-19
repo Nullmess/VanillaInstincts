@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:movement_policy/grown_mob_becomes_run_eligible",
+  "environment": "vanillainstincts:movement_policy",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:village_construction_rules/saved_counter_stops_at_one",
+  "environment": "vanillainstincts:village_construction_rules",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

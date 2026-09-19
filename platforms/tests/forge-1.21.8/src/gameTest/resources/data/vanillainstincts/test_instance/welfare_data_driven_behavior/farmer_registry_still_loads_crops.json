@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:welfare_data_driven_behavior/farmer_registry_still_loads_crops",
+  "environment": "vanillainstincts:welfare_data_driven_behavior",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

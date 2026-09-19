@@ -1,0 +1,66 @@
+import groovy.json.JsonSlurper
+
+pluginManagement {
+    repositories {
+        maven { url = uri('https://maven.neoforged.net/releases') }
+        maven { url = uri('https://maven.minecraftforge.net') }
+        mavenCentral()
+        gradlePluginPortal()
+    }
+
+    resolutionStrategy {
+        eachPlugin {
+            if (requested.id.id == 'net.neoforged.gradle.userdev') {
+                useModule("net.neoforged.gradle:userdev:${requested.version}")
+            }
+        }
+    }
+}
+
+
+rootProject.name = 'VanillaInstincts'
+
+include(':core')
+
+File catalogFile = file('gradle/minecraft-targets.json')
+if (!catalogFile.isFile()) {
+    throw new GradleException('Missing gradle/minecraft-targets.json')
+}
+
+def catalog = new JsonSlurper().parse(catalogFile)
+def registeredTargets = catalog.targets.findAll { it.buildSystem == 'root-gradle' }
+def byId = registeredTargets.collectEntries { [(it.id as String): it] }
+String rawRequestedTarget = gradle.startParameter.projectProperties['target']
+String requestedTarget = rawRequestedTarget
+if (requestedTarget == 'forge-1.16') {
+    requestedTarget = 'forge-1.16.1'
+    println "Vanilla Instincts target alias: forge-1.16 -> forge-1.16.1 (Minecraft 1.16.1 / Forge 32.0.108)"
+}
+
+if (requestedTarget in ['forge-1.15.2', 'forge-1.15.1', 'forge-1.15', 'forge-1.16.3', 'forge-1.16.2', 'forge-1.16.1']) {
+    println "Vanilla Instincts 1.0.0: catalog=${catalogFile.absolutePath}"
+}
+
+def targetsToInclude
+if (requestedTarget != null) {
+    def target = byId[requestedTarget]
+    if (target == null) {
+        String available = registeredTargets.collect { it.id }.sort().join(', ')
+        throw new GradleException(
+                "Unknown target '${requestedTarget}'. Available targets: ${available}")
+    }
+    targetsToInclude = [target]
+} else {
+    targetsToInclude = registeredTargets.findAll {
+        it.status in ['stable', 'experimental']
+    }
+}
+
+if (targetsToInclude.any { ((it.java ?: 17) as Number).intValue() <= 8 }) {
+    include(':core-legacy')
+}
+
+targetsToInclude.each { target ->
+    include(target.projectPath as String)
+    project(target.projectPath as String).projectDir = file(target.projectDir as String)
+}

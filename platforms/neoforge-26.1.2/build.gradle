@@ -1,0 +1,7 @@
+plugins {
+    id 'java-library'
+    id 'maven-publish'
+    id 'net.neoforged.gradle.userdev' version '7.1.38'
+}
+
+apply from: rootProject.file('gradle/neoforge-platform.gradle')

@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:creeper_spider_tactics/spider_surface_planner_selects_ceiling",
+  "environment": "vanillainstincts:creeper_spider_tactics",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

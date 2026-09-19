@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:persistence_migration/temporary_web_round_trips",
+  "environment": "vanillainstincts:persistence_migration",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

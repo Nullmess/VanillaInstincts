@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:data_driven_ai/farmer_plants_registered_crop",
+  "environment": "vanillainstincts:data_driven_ai",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

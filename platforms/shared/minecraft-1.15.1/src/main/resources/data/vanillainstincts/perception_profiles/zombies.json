@@ -1,0 +1,22 @@
+{
+  "priority": 100,
+  "entities": [
+    "minecraft:zombie",
+    "minecraft:husk",
+    "minecraft:drowned",
+    "minecraft:zombie_villager"
+  ],
+  "visual_range": 36.0,
+  "hearing_multiplier": 1.18,
+  "night_visual_multiplier": 1.15,
+  "rain_visual_multiplier": 0.92,
+  "sneaking_visual_multiplier": 0.68,
+  "invisible_visual_multiplier": 0.50,
+  "blindness_range": 4.0,
+  "sneaking_hearing_multiplier": 0.72,
+  "easy_multiplier": 0.88,
+  "normal_multiplier": 1.0,
+  "hard_multiplier": 1.16,
+  "last_seen_ticks": 160,
+  "last_heard_ticks": 130
+}

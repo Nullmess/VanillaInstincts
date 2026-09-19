@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:trapped_chest_prank/trapped_chest_is_eligible",
+  "environment": "vanillainstincts:trapped_chest_prank",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

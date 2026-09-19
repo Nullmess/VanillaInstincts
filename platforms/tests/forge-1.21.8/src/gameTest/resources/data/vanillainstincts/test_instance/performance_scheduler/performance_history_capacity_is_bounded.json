@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:performance_scheduler/performance_history_capacity_is_bounded",
+  "environment": "vanillainstincts:performance_scheduler",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:movement_policy/ordinary_zombified_piglin_cannot_use_vanilla_instincts_run",
+  "environment": "vanillainstincts:movement_policy",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

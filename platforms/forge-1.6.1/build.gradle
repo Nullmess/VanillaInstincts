@@ -1,0 +1,12 @@
+buildscript {
+    repositories {
+        mavenCentral()
+        maven { url = 'https://maven.minecraftforge.net/' }
+    }
+    dependencies {
+        classpath 'net.minecraftforge.gradle:ForgeGradle:1.0-SNAPSHOT'
+    }
+}
+
+ext.vi16Minecraft = '1.6.1'
+apply from: file('../../gradle/forge-1.6.x.gradle')

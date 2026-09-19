@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:possession_catalog/zombie_uses_ground_movement",
+  "environment": "vanillainstincts:possession_catalog",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

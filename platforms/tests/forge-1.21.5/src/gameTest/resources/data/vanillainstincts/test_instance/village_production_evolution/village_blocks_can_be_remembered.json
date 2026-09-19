@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:village_production_evolution/village_blocks_can_be_remembered",
+  "environment": "vanillainstincts:village_production_evolution",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

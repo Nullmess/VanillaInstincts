@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:village_alert_patrol/baby_stops_adult_search_at_deadline",
+  "environment": "vanillainstincts:village_alert_patrol",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

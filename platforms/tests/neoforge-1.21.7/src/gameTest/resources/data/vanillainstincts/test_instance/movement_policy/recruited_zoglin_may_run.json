@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:movement_policy/recruited_zoglin_may_run",
+  "environment": "vanillainstincts:movement_policy",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

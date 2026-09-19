@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:profession_expedition/expedition_radius_has_upper_bound",
+  "environment": "vanillainstincts:profession_expedition",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

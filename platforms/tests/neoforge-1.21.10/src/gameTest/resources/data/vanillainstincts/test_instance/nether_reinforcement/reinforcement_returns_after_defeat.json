@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:nether_reinforcement/reinforcement_returns_after_defeat",
+  "environment": "vanillainstincts:nether_reinforcement",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

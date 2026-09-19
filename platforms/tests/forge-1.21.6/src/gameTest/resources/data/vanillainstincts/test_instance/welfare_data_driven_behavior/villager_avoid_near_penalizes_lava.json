@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:welfare_data_driven_behavior/villager_avoid_near_penalizes_lava",
+  "environment": "vanillainstincts:welfare_data_driven_behavior",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}

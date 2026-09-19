@@ -1,0 +1,338 @@
+import groovy.json.JsonSlurper
+
+plugins {
+    id 'base'
+}
+
+// Keep root-project Gradle outputs out of ./build. Target projects keep their own
+// build/ directories because those contain the distributable Forge/NeoForge JARs.
+layout.buildDirectory.set(layout.projectDirectory.dir('.gradle/root-project'))
+
+def cleanLegacyRootBuild = tasks.register('cleanLegacyRootBuild') {
+    group = 'build'
+    description = 'Remove the obsolete root-level build directory.'
+    doLast {
+        delete(layout.projectDirectory.dir('build'))
+    }
+}
+
+allprojects {
+    group = providers.gradleProperty('mod_group_id').get()
+    version = providers.gradleProperty('mod_version').get()
+}
+
+def requiredVersion = providers.gradleProperty('mod_version')
+def releaseChannel = providers.gradleProperty('mod_release_channel')
+def catalogFile = file('gradle/minecraft-targets.json')
+def catalog = new JsonSlurper().parse(catalogFile)
+def registeredTargets = catalog.targets.findAll {
+    it.buildSystem == 'root-gradle'
+}
+def defaultTargets = registeredTargets.findAll {
+    it.status in ['stable', 'experimental']
+}
+def minecraftFamiliesById = (catalog.minecraftFamilies ?: []).collectEntries {
+    [(it.id as String): it]
+}
+def loaderAdaptersById = (catalog.loaderAdapters ?: []).collectEntries {
+    [(it.id as String): it]
+}
+def targetsById = registeredTargets.collectEntries { [(it.id as String): it] }
+def targetAliases = [
+        'forge-1.16': 'forge-1.16.1'
+]
+def rawTargetProperty = providers.gradleProperty('target').orNull
+def targetProperty = rawTargetProperty == null
+        ? null
+        : (targetAliases[rawTargetProperty] ?: rawTargetProperty)
+def selectedTarget = targetProperty == null ? null : targetsById[targetProperty]
+
+if (rawTargetProperty != null && selectedTarget == null) {
+    String available = registeredTargets.collect { it.id }.sort().join(', ')
+    throw new GradleException(
+            "Unknown target '${rawTargetProperty}'. Available targets: ${available}")
+}
+
+def targetsToRun = selectedTarget == null ? defaultTargets : [selectedTarget]
+
+tasks.register('verifyRepository') {
+    group = 'verification'
+    description = 'Verify repository, Minecraft target catalog and release metadata.'
+
+    doLast {
+        if (requiredVersion.get() != '1.0.0') {
+            throw new GradleException(
+                    "Expected version 1.0.0, found ${requiredVersion.get()}.")
+        }
+        if (releaseChannel.get() != 'stable') {
+            throw new GradleException(
+                    "Expected stable release channel, found ${releaseChannel.get()}.")
+        }
+        if (providers.gradleProperty('mod_group_id').get() != 'fr.vanillainstincts') {
+            throw new GradleException('Unexpected Java namespace.')
+        }
+        if (registeredTargets.isEmpty()) {
+            throw new GradleException('No Minecraft target is registered.')
+        }
+        if (defaultTargets.isEmpty()) {
+            throw new GradleException('No stable or experimental Minecraft target is available.')
+        }
+        if (registeredTargets*.id.toSet().size() != registeredTargets.size()) {
+            throw new GradleException('Minecraft target IDs must be unique.')
+        }
+        if (catalog.releasePolicy.portingGoalMinimumMinecraft != '1.6.1') {
+            throw new GradleException('Compatibility policy must start at Minecraft 1.6.1.')
+        }
+        if (!catalog.releasePolicy.trackLatestMinecraft) {
+            throw new GradleException('Compatibility policy must track the latest Minecraft release.')
+        }
+
+        [
+            'README.md',
+            'CHANGELOG.md',
+            'LICENSE',
+            '.java-version',
+            '.editorconfig',
+            '.gitattributes',
+            'gradle/minecraft-targets.json',
+            'gradle/neoforge-platform.gradle',
+            'gradle/forge-platform.gradle',
+            '.github/workflows/ci.yml',
+            '.github/workflows/release.yml'
+        ].each { path ->
+            if (!file(path).isFile()) {
+                throw new GradleException("Missing repository file: ${path}")
+            }
+        }
+
+        String defaultJava = String.valueOf(catalog.releasePolicy.defaultJava)
+        if (file('.java-version').getText('UTF-8').trim() != defaultJava) {
+            throw new GradleException(
+                    ".java-version must contain the default Java version ${defaultJava}.")
+        }
+        String changelogHeading = "## ${requiredVersion.get()}"
+        if (!file('CHANGELOG.md').getText('UTF-8').readLines().any { it.trim() == changelogHeading }) {
+            throw new GradleException("CHANGELOG does not contain ${changelogHeading}.")
+        }
+        if (!file('README.md').getText('UTF-8').contains('/vanillainstincts control')) {
+            throw new GradleException('README does not document the possession command.')
+        }
+        if (!file('gradle/wrapper/gradle-wrapper.properties').getText('UTF-8')
+                .contains('distributionSha256Sum=')) {
+            throw new GradleException('Gradle distribution checksum is missing.')
+        }
+
+        (catalog.minecraftFamilies ?: []).each { family ->
+            File familyDir = file(family.dir as String)
+            if (!familyDir.isDirectory()) {
+                throw new GradleException(
+                        "Minecraft family ${family.id} does not exist: ${family.dir}")
+            }
+            File releaseMetadata = new File(familyDir,
+                    'src/main/resources/META-INF/vanillainstincts-release.properties')
+            if (!releaseMetadata.isFile()) {
+                throw new GradleException(
+                        "Minecraft family ${family.id} is missing release metadata.")
+            }
+        }
+
+        (catalog.loaderAdapters ?: []).each { adapter ->
+            File adapterDir = file(adapter.dir as String)
+            if (!adapterDir.isDirectory()) {
+                throw new GradleException(
+                        "Loader adapter ${adapter.id} does not exist: ${adapter.dir}")
+            }
+            if (minecraftFamiliesById[adapter.minecraftFamily as String] == null) {
+                throw new GradleException(
+                        "Loader adapter ${adapter.id} references unknown family ${adapter.minecraftFamily}.")
+            }
+            List<String> metadataPaths = adapter.loader == 'forge'
+                    ? [
+                        'src/main/resources/META-INF/mods.toml',
+                        'src/main/resources/mcmod.info'
+                    ]
+                    : [
+                        'src/main/resources/META-INF/neoforge.mods.toml',
+                        'src/main/resources/META-INF/mods.toml'
+                    ]
+            if (!metadataPaths.any { path -> new File(adapterDir, path).isFile() }) {
+                throw new GradleException(
+                        "Loader adapter ${adapter.id} is missing loader metadata (${metadataPaths.join(' or ')}).")
+            }
+        }
+
+        [forge: 'net.minecraftforge.gametest.GameTestHolder',
+         neoforge: 'net.neoforged.neoforge.gametest.GameTestHolder'].each { loader, holderImport ->
+            File suite = file("platforms/tests/${loader}")
+            File javaRoot = new File(suite, 'src/gameTest/java/fr/vanillainstincts/gametest')
+            File resourceRoot = new File(suite, 'src/gameTest/resources/data')
+            if (!javaRoot.isDirectory()) {
+                throw new GradleException("Missing ${loader} GameTest suite.")
+            }
+            List<File> testSources = fileTree(javaRoot) { include '**/*.java' }.files.toList()
+            int testCount = testSources.sum { source ->
+                (source.getText('UTF-8') =~ /@GameTest\(/).count
+            } as int
+            if (testSources.size() != 46 || testCount != 600) {
+                throw new GradleException(
+                        "Expected 46 classes / 600 ${loader} GameTests, found ${testSources.size()} / ${testCount}.")
+            }
+            if (testSources.any { source -> !source.getText('UTF-8').contains(holderImport) }) {
+                throw new GradleException("${loader} GameTests use the wrong loader annotations.")
+            }
+            String sharedStructurePattern = loader == 'forge'
+                    ? '**/structure/empty.nbt'
+                    : '**/structure/empty.nbt'
+            int structureCount = fileTree(resourceRoot) {
+                include sharedStructurePattern
+            }.files.size()
+            if (structureCount != 1) {
+                throw new GradleException(
+                        "Expected one ${loader} shared GameTest structure, found ${structureCount}.")
+            }
+        }
+
+        Set<String> projectDirs = new LinkedHashSet<>()
+        registeredTargets.each { target ->
+            File targetDir = file(target.projectDir as String)
+            if (!targetDir.isDirectory()) {
+                throw new GradleException(
+                        "Target ${target.id} directory does not exist: ${target.projectDir}")
+            }
+            if (!new File(targetDir, 'build.gradle').isFile()) {
+                throw new GradleException("Target ${target.id} is missing build.gradle.")
+            }
+            if (!projectDirs.add(targetDir.canonicalPath)) {
+                throw new GradleException(
+                        "Each target needs its own Gradle project directory: ${target.projectDir}")
+            }
+
+            def family = minecraftFamiliesById[target.minecraftFamily as String]
+            if (family == null) {
+                throw new GradleException(
+                        "Target ${target.id} references unknown Minecraft family ${target.minecraftFamily}.")
+            }
+            def adapter = loaderAdaptersById[target.loaderAdapter as String]
+            if (adapter == null) {
+                throw new GradleException(
+                        "Target ${target.id} references unknown loader adapter ${target.loaderAdapter}.")
+            }
+            if ((adapter.loader as String) != (target.loader as String)) {
+                throw new GradleException(
+                        "Target ${target.id} loader differs from adapter ${adapter.id}.")
+            }
+            if ((adapter.minecraftFamily as String) != (family.id as String)) {
+                throw new GradleException(
+                        "Target ${target.id} family differs from adapter ${adapter.id}.")
+            }
+            if (!(family.status in ['implemented', 'porting'])) {
+                throw new GradleException(
+                        "Minecraft family ${family.id} has unsupported status ${family.status}.")
+            }
+            if (!(adapter.status in ['implemented', 'porting'])) {
+                throw new GradleException(
+                        "Loader adapter ${adapter.id} has unsupported status ${adapter.status}.")
+            }
+            if (target.status in ['stable', 'experimental']
+                    && (family.status != 'implemented' || adapter.status != 'implemented')) {
+                throw new GradleException(
+                        "Runnable target ${target.id} must use implemented family and loader adapter.")
+            }
+
+            if (!(target.minecraft as String).trim()) {
+                throw new GradleException("Target ${target.id} has no Minecraft version.")
+            }
+            if (!(target.minecraftRange as String).trim()) {
+                throw new GradleException("Target ${target.id} has no Minecraft range.")
+            }
+            if (!(target.loaderVersion as String).trim()) {
+                throw new GradleException("Target ${target.id} has no loader version.")
+            }
+            if (!(target.loaderVersionRange as String).trim()) {
+                throw new GradleException("Target ${target.id} has no loader version range.")
+            }
+            if (!(target.status in ['stable', 'experimental', 'porting'])) {
+                throw new GradleException(
+                        "Target ${target.id} has unsupported status ${target.status}.")
+            }
+            if (target.ci && target.status == 'porting') {
+                throw new GradleException(
+                        "Porting target ${target.id} must not run in CI until it compiles.")
+            }
+            if (target.status in ['stable', 'experimental']) {
+                if (target.gameTests != true
+                        || target.gameTestTask != 'runGameTestServer'
+                        || target.gameTestNamespace != 'vanillainstincts') {
+                    throw new GradleException(
+                            "Runnable target ${target.id} must run the shared 600-GameTest suite.")
+                }
+            }
+        }
+    }
+}
+
+tasks.register('verifyReleaseReadiness') {
+    group = 'verification'
+    description = 'Verify public version, stable channel and optional release tag.'
+    dependsOn tasks.named('verifyRepository')
+
+    doLast {
+        String expectedTag = "v${requiredVersion.get()}"
+        String releaseTag = System.getenv('RELEASE_TAG') ?: ''
+        if (!releaseTag.isEmpty() && releaseTag != expectedTag) {
+            throw new GradleException(
+                    "Release tag ${releaseTag} does not match ${expectedTag}.")
+        }
+        println "RELEASE_READINESS: OK version=${requiredVersion.get()} channel=${releaseChannel.get()} defaultTargets=${defaultTargets.size()} registeredTargets=${registeredTargets.size()}"
+    }
+}
+
+tasks.named('check').configure {
+    dependsOn ':core:check'
+    dependsOn tasks.named('verifyReleaseReadiness')
+    targetsToRun.each { target ->
+        // Normal Gradle build/check validates compilation, metadata, tests and the
+        // distributable JAR. The dedicated Minecraft GameTest server is an
+        // integration test and is intentionally opt-in via the gameTest task below.
+        // This keeps a launcher/daemon quirk from turning a valid release JAR into
+        // a failed build while preserving the full GameTest suite on demand.
+        dependsOn "${target.projectPath}:check"
+    }
+}
+
+tasks.register('gameTest') {
+    group = 'verification'
+    description = 'Run the dedicated Minecraft GameTest server for the selected target.'
+    dependsOn tasks.named('verifyReleaseReadiness')
+    targetsToRun.each { target ->
+        if (target.gameTestTask) {
+            dependsOn "${target.projectPath}:${target.gameTestTask}"
+        }
+    }
+    doFirst {
+        if (selectedTarget == null) {
+            throw new GradleException(
+                    'gameTest requires -Ptarget=<loader>-<minecraft> to avoid launching every GameTest server accidentally.')
+        }
+        if (!selectedTarget.gameTestTask) {
+            throw new GradleException(
+                    "Target ${selectedTarget.id} has no dedicated GameTest server.")
+        }
+    }
+}
+
+tasks.named('build').configure {
+    dependsOn cleanLegacyRootBuild
+    dependsOn ':core:build'
+    targetsToRun.each { target ->
+        dependsOn "${target.projectPath}:build"
+    }
+}
+
+tasks.named('clean').configure {
+    dependsOn cleanLegacyRootBuild
+    dependsOn ':core:clean'
+    targetsToRun.each { target ->
+        dependsOn "${target.projectPath}:clean"
+    }
+}

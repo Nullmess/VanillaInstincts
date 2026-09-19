@@ -1,0 +1,17 @@
+{
+  "priority": 110,
+  "entities": ["minecraft:creeper"],
+  "visual_range": 32.0,
+  "hearing_multiplier": 1.12,
+  "night_visual_multiplier": 1.12,
+  "rain_visual_multiplier": 0.94,
+  "sneaking_visual_multiplier": 0.64,
+  "invisible_visual_multiplier": 0.42,
+  "blindness_range": 3.5,
+  "sneaking_hearing_multiplier": 0.70,
+  "easy_multiplier": 0.88,
+  "normal_multiplier": 1.0,
+  "hard_multiplier": 1.15,
+  "last_seen_ticks": 145,
+  "last_heard_ticks": 120
+}

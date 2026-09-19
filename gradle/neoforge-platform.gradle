@@ -1,0 +1,350 @@
+import groovy.json.JsonSlurper
+
+File catalogFile = rootProject.file('gradle/minecraft-targets.json')
+def catalog = new JsonSlurper().parse(catalogFile)
+def target = catalog.targets.find {
+    rootProject.file(it.projectDir as String).canonicalFile == project.projectDir.canonicalFile
+}
+if (target == null) {
+    throw new GradleException("No Minecraft target catalog entry matches ${project.projectDir}")
+}
+if (target.loader != 'neoforge') {
+    throw new GradleException("Target ${target.id} is not a NeoForge target.")
+}
+
+def family = (catalog.minecraftFamilies ?: []).find { it.id == target.minecraftFamily }
+def adapter = (catalog.loaderAdapters ?: []).find { it.id == target.loaderAdapter }
+if (family == null || adapter == null) {
+    throw new GradleException("Incomplete family/adapter catalog entry for ${target.id}.")
+}
+
+File minecraftFamily = rootProject.file(family.dir as String)
+File loaderAdapter = rootProject.file(adapter.dir as String)
+if (!minecraftFamily.isDirectory()) {
+    throw new GradleException("Missing Minecraft family for ${target.id}: ${minecraftFamily}")
+}
+if (!loaderAdapter.isDirectory()) {
+    throw new GradleException("Missing NeoForge adapter for ${target.id}: ${loaderAdapter}")
+}
+
+String targetId = target.id as String
+String minecraftVersion = target.minecraft as String
+String minecraftRange = target.minecraftRange as String
+String neoForgeVersion = target.loaderVersion as String
+String loaderVersionRange = target.loaderVersionRange as String
+File modernNeoMetadataFile = new File(loaderAdapter, 'src/main/resources/META-INF/neoforge.mods.toml')
+File legacyNeoMetadataFile = new File(loaderAdapter, 'src/main/resources/META-INF/mods.toml')
+String neoMetadataFile
+if (modernNeoMetadataFile.isFile()) {
+    neoMetadataFile = 'META-INF/neoforge.mods.toml'
+} else if (legacyNeoMetadataFile.isFile()) {
+    neoMetadataFile = 'META-INF/mods.toml'
+} else {
+    throw new GradleException("Missing NeoForge metadata descriptor for ${target.id}: expected META-INF/neoforge.mods.toml or META-INF/mods.toml in ${loaderAdapter}")
+}
+boolean legacyNeoMetadata = neoMetadataFile == 'META-INF/mods.toml'
+int javaVersion = (target.java as Number).intValue()
+boolean gameTestsEnabled = target.gameTests == true
+String gameTestNamespace = gameTestsEnabled ? target.gameTestNamespace as String : ''
+String gameTestSuitePath = target.gameTestSuite ?: 'platforms/tests/neoforge'
+File gameTestSuite = rootProject.file(gameTestSuitePath)
+if (gameTestsEnabled && !gameTestSuite.isDirectory()) {
+    throw new GradleException("Missing shared NeoForge GameTest suite: ${gameTestSuite}")
+}
+
+base {
+    archivesName = target.artifactBase as String
+}
+
+java.toolchain.languageVersion = JavaLanguageVersion.of(javaVersion)
+
+sourceSets {
+    main {
+        java.setSrcDirs([
+                new File(minecraftFamily, 'src/main/java'),
+                new File(loaderAdapter, 'src/main/java')
+        ])
+        resources.setSrcDirs([
+                new File(minecraftFamily, 'src/main/resources'),
+                new File(minecraftFamily, 'src/generated/resources'),
+                new File(loaderAdapter, 'src/main/resources')
+        ])
+        resources.exclude('**/*.bbmodel')
+        resources.exclude('src/generated/**/.cache')
+    }
+    if (gameTestsEnabled) {
+        gameTest {
+            java.setSrcDirs([new File(gameTestSuite, 'src/gameTest/java')])
+            resources.setSrcDirs([new File(gameTestSuite, 'src/gameTest/resources')])
+            depends.on sourceSets.main
+        }
+    }
+}
+
+repositories {
+    maven { url = uri('https://maven.neoforged.net/releases') }
+    mavenCentral()
+}
+
+runs {
+    configureEach {
+        systemProperty 'forge.logging.markers', 'REGISTRIES'
+        systemProperty 'forge.logging.console.level', 'info'
+        workingDirectory rootProject.layout.projectDirectory
+                .dir("run/${targetId}")
+                .dir(name)
+    }
+
+    client {
+        modSource sourceSets.main
+        if (gameTestsEnabled) {
+            systemProperty 'neoforge.enabledGameTestNamespaces', gameTestNamespace
+        }
+    }
+
+    server {
+        modSource sourceSets.main
+        if (gameTestsEnabled) {
+            systemProperty 'neoforge.enabledGameTestNamespaces', gameTestNamespace
+        }
+        argument '--nogui'
+    }
+
+    if (gameTestsEnabled) {
+        gameTestServer {
+            modSources {
+                add sourceSets.main
+                local sourceSets.gameTest
+            }
+            systemProperty 'neoforge.enabledGameTestNamespaces', gameTestNamespace
+            workingDirectory rootProject.layout.projectDirectory
+                    .dir("run/${targetId}")
+                    .dir('gameTestServer')
+        }
+    }
+}
+
+configurations {
+    runtimeClasspath.extendsFrom localRuntime
+}
+
+dependencies {
+    implementation project(':core')
+    implementation "net.neoforged:neoforge:${neoForgeVersion}"
+}
+
+tasks.withType(ProcessResources).configureEach {
+    def replaceProperties = [
+            target_minecraft_version        : minecraftVersion,
+            target_minecraft_version_range  : minecraftRange,
+            target_loader                   : 'neoforge',
+            target_loader_version           : neoForgeVersion,
+            target_neoforge_version         : neoForgeVersion,
+            target_loader_version_range     : loaderVersionRange,
+            target_java_version             : String.valueOf(javaVersion),
+            target_game_tests               : gameTestsEnabled ? '600' : '0',
+            target_game_test_namespaces     : gameTestsEnabled ? '1' : '0',
+            target_game_test_server_runs    : gameTestsEnabled ? '1' : '0',
+            mod_id                          : mod_id,
+            mod_name                        : mod_name,
+            mod_license                     : mod_license,
+            mod_version                     : mod_version,
+            mod_release_channel             : mod_release_channel,
+            mod_release_date                : mod_release_date
+    ]
+
+    inputs.properties replaceProperties
+    filesMatching([
+            'META-INF/neoforge.mods.toml',
+            'META-INF/mods.toml',
+            'META-INF/vanillainstincts-release.properties'
+    ]) {
+        expand replaceProperties
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+    options.release = javaVersion
+}
+
+tasks.withType(Jar).configureEach {
+    preserveFileTimestamps = false
+    reproducibleFileOrder = true
+    manifest {
+        def manifestAttributes = [
+                'Specification-Title'      : mod_name,
+                'Specification-Vendor'     : 'Vanilla Instincts',
+                'Specification-Version'    : mod_version,
+                'Implementation-Title'     : mod_name,
+                'Implementation-Version'   : mod_version,
+                'Implementation-Vendor'    : 'Vanilla Instincts',
+                'Automatic-Module-Name'    : 'fr.vanillainstincts',
+                'Release-Channel'          : mod_release_channel,
+                'Minecraft-Version'        : minecraftVersion,
+                'Mod-Loader'               : 'NeoForge',
+                'NeoForge-Version'         : neoForgeVersion
+        ]
+        // NeoForge 20.4 still uses the legacy Forge-style mixin manifest entry.
+        // From 20.5 onward, mixin configs are declared in neoforge.mods.toml.
+        if (legacyNeoMetadata) {
+            manifestAttributes['MixinConfigs'] = 'vanillainstincts.mixins.json'
+        }
+        attributes(manifestAttributes)
+    }
+}
+
+tasks.named('jar', Jar).configure {
+    dependsOn project(':core').tasks.named('classes')
+    from(project(':core').sourceSets.main.output)
+    from(rootProject.file('LICENSE')) {
+        into 'META-INF'
+        rename { 'LICENSE_Vanilla_Instincts' }
+    }
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+
+tasks.register('verifyTargetJar') {
+    group = 'verification'
+    description = "Verify the public ${targetId} JAR."
+    dependsOn tasks.named('jar')
+
+    doLast {
+        File jarFile = tasks.named('jar', Jar).get().archiveFile.get().asFile
+        if (!jarFile.isFile() || jarFile.length() < 10_000L) {
+            throw new GradleException("Invalid ${targetId} JAR: ${jarFile}")
+        }
+
+        java.util.zip.ZipFile archive = new java.util.zip.ZipFile(jarFile)
+        try {
+            [
+                    neoMetadataFile,
+                    'META-INF/vanillainstincts-release.properties',
+                    'META-INF/LICENSE_Vanilla_Instincts',
+                    'vanillainstincts.mixins.json',
+                    'fr/vanillainstincts/VanillaInstincts.class'
+            ].each { entry ->
+                if (archive.getEntry(entry) == null) {
+                    throw new GradleException("Required JAR entry is missing: ${entry}")
+                }
+            }
+
+            String releaseMetadata = archive.getInputStream(archive.getEntry(
+                    'META-INF/vanillainstincts-release.properties')).getText('UTF-8')
+            if (!releaseMetadata.contains("version=${mod_version}")
+                    || !releaseMetadata.contains("release_channel=${mod_release_channel}")
+                    || !releaseMetadata.contains("minecraft_version=${minecraftVersion}")
+                    || !releaseMetadata.contains('loader=neoforge')
+                    || !releaseMetadata.contains("loader_version=${neoForgeVersion}")) {
+                throw new GradleException("Release metadata is inconsistent for ${targetId}.")
+            }
+
+            archive.entries().each { entry ->
+                if (entry.name.startsWith('fr/vanillainstincts/gametest/')
+                        || entry.name == 'data/vanillainstincts/structure/empty.nbt') {
+                    throw new GradleException(
+                            "GameTest content leaked into the public JAR: ${entry.name}")
+                }
+            }
+        } finally {
+            archive.close()
+        }
+
+        println "JAR verified [${targetId}]: ${jarFile.name} (${jarFile.length()} bytes)"
+    }
+}
+
+if (gameTestsEnabled) {
+    tasks.register('verifyGameTestLayout') {
+        group = 'verification'
+        description = "Verify the semantic GameTest layout for ${targetId}."
+        dependsOn tasks.named('compileGameTestJava')
+
+        doLast {
+            [minecraftFamily, loaderAdapter].each { sourceRoot ->
+                File mainGameTests = new File(sourceRoot,
+                        'src/main/java/fr/vanillainstincts/gametest')
+                if (mainGameTests.exists()) {
+                    throw new GradleException('GameTest sources must not exist under src/main.')
+                }
+            }
+
+            File gameTestJava = new File(gameTestSuite,
+                    'src/gameTest/java/fr/vanillainstincts/gametest')
+            List<File> sources = fileTree(gameTestJava) { include '**/*.java' }.files.toList()
+            if (sources.size() != 46) {
+                throw new GradleException("Expected 46 shared GameTest classes, found ${sources.size()}.")
+            }
+            if (sources.any { it.getText('UTF-8').contains('net.minecraftforge.gametest') }) {
+                throw new GradleException('Forge GameTest annotations leaked into NeoForge tests.')
+            }
+            List<File> numbered = sources.findAll { source ->
+                source.name ==~ /.*GameTests[0-9]+\.java/
+            }
+            if (!numbered.isEmpty()) {
+                throw new GradleException('Numbered GameTest classes are not allowed: '
+                        + numbered*.name.join(', '))
+            }
+
+            File sharedTemplate = new File(gameTestSuite,
+                    'src/gameTest/resources/data/vanillainstincts/structure/empty.nbt')
+            if (!sharedTemplate.isFile()) {
+                throw new GradleException('Shared GameTest template is missing.')
+            }
+            int structureCount = fileTree(new File(gameTestSuite, 'src/gameTest/resources/data')) {
+                include '**/structure/empty.nbt'
+            }.files.size()
+            if (structureCount != 1) {
+                throw new GradleException(
+                        "Expected one shared GameTest structure, found ${structureCount}.")
+            }
+        }
+    }
+
+    tasks.register('verifyProductionTestManifest') {
+        group = 'verification'
+        description = "Verify GameTest registration for ${targetId}."
+
+        doLast {
+            File gameTestRoot = new File(gameTestSuite,
+                    'src/gameTest/java/fr/vanillainstincts/gametest')
+            List<File> sources = fileTree(gameTestRoot) {
+                include '**/*.java'
+            }.files.toList().sort { left, right -> left.path <=> right.path }
+            int gameTestCount = sources.sum { source ->
+                (source.getText('UTF-8') =~ /@GameTest\(/).count
+            } as int
+            if (gameTestCount != 600) {
+                throw new GradleException("Expected exactly 600 GameTests, found ${gameTestCount}.")
+            }
+
+            List<File> unregisteredSources = sources.findAll { source ->
+                String text = source.getText('UTF-8')
+                text.contains('@GameTest(')
+                        && !text.contains('@GameTestHolder(VanillaInstincts.MOD_ID)')
+            }
+            if (!unregisteredSources.isEmpty()) {
+                throw new GradleException('GameTest sources missing @GameTestHolder: '
+                        + unregisteredSources*.name.join(', '))
+            }
+
+            Set<String> namespaces = new LinkedHashSet<>()
+            sources.each { source ->
+                def matcher = source.getText('UTF-8') =~ /templateNamespace = "([^"]+)"/
+                matcher.each { match -> namespaces.add(match[1]) }
+            }
+            if (namespaces != [gameTestNamespace] as LinkedHashSet<String>) {
+                throw new GradleException(
+                        "GameTests must use namespace ${gameTestNamespace}: ${namespaces}.")
+            }
+        }
+    }
+}
+
+tasks.named('check').configure {
+    dependsOn tasks.named('verifyTargetJar')
+    if (gameTestsEnabled) {
+        dependsOn tasks.named('verifyGameTestLayout')
+        dependsOn tasks.named('verifyProductionTestManifest')
+    }
+}

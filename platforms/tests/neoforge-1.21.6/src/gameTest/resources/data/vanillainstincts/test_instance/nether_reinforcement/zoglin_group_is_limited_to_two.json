@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "vanillainstincts:nether_reinforcement/zoglin_group_is_limited_to_two",
+  "environment": "vanillainstincts:nether_reinforcement",
+  "structure": "vanillainstincts:empty",
+  "max_ticks": 100
+}
