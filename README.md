@@ -62,16 +62,79 @@ Vanilla Instincts makes mobs smarter and more tactical while keeping Minecraft c
 | 1.19.x | 1.19, 1.19.1, 1.19.2, 1.19.3, 1.19.4 | — |
 | 1.20.x | 1.20, 1.20.1, 1.20.2, 1.20.3, 1.20.4, 1.20.6 | 1.20.2, 1.20.3, 1.20.4, 1.20.5, 1.20.6 |
 | 1.21.x | 1.21, 1.21.1, 1.21.3, 1.21.5, 1.21.6, 1.21.7, 1.21.8, 1.21.9, 1.21.10, 1.21.11 | 1.21, 1.21.1, 1.21.2, 1.21.3, 1.21.5, 1.21.6, 1.21.7, 1.21.8, 1.21.9, 1.21.10, 1.21.11 |
-| 26.x | 26.1, 26.1.1, 26.1.2, 26.2 | 26.1, 26.1.1, 26.1.2, 26.2 |
+| 26.x | 26.1, 26.1.1, 26.1.2, 26.2 | 26.1, 26.1.1, 26.1.2, 26.2, 26.3 |
 
 ---
 
 ## 🎮 Usage
 
-Vanilla Instincts works in singleplayer and multiplayer and is intended to be
-installed on both the client and server.
+Vanilla Instincts supports singleplayer and multiplayer and is intended to be installed on both the client and server.
 
 To control a mob, switch to **Spectator mode**, spectate the target mob and run:
 
 ```text
 /vanillainstincts control
+```
+
+Run the command again to release control.
+
+---
+
+## 🛠️ Build
+
+Build a specific Forge target:
+
+```sh
+./gradlew build -Ptarget=forge-1.21.11
+```
+
+Build a specific NeoForge target:
+
+```sh
+./gradlew build -Ptarget=neoforge-26.3
+```
+
+Build all supported targets:
+
+```sh
+./gradlew buildAll
+```
+
+Build all Forge targets:
+
+```sh
+./gradlew buildAllForge
+```
+
+Build all NeoForge targets:
+
+```sh
+./gradlew buildAllNeoForge
+```
+
+Run Minecraft integration tests for a specific target:
+
+```sh
+./gradlew gameTest -Ptarget=neoforge-1.21.10
+```
+
+Clean generated build files:
+
+```sh
+./gradlew cleanAll
+```
+
+Running `./gradlew build` without `-Ptarget` prints a valid target usage example.
+
+---
+
+## 👤 Author
+
+Give a ⭐️ if Vanilla Instincts made your Minecraft worlds more dangerous!
+
+---
+
+## 📄 License
+
+Copyright © 2026 [Nullmess](https://github.com/Nullmess).<br />
+This project is licensed under the [MIT License](LICENSE).
