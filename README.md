@@ -14,12 +14,12 @@
 
 <p align="center">
     <a href="https://github.com/Nullmess/Vanilla-Instincts/stargazers">
-        <img src="https://img.shields.io/github/stars/Nullmess/Vanilla-Instincts?style=flat&logo=github" alt="Stars">
+        <img src="https://img.shields.io/github/stars/Nullmess/VanillaInstincts?style=flat&logo=github" alt="Stars">
     </a>
     <a href="LICENSE">
-        <img src="https://img.shields.io/github/license/Nullmess/Vanilla-Instincts?style=flat" alt="License">
+        <img src="https://img.shields.io/github/license/Nullmess/VanillaInstincts?style=flat" alt="License">
     </a>
-    <img src="https://hits.sh/github.com/Nullmess/Vanilla-Instincts.svg?label=views" alt="Views">
+    <img src="https://hits.sh/github.com/Nullmess/VanillaInstincts.svg?label=views" alt="Views">
 </p>
 
 <p align="center">
