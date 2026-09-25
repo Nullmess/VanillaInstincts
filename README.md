@@ -16,6 +16,9 @@
     <a href="https://github.com/Nullmess/Vanilla-Instincts/stargazers">
         <img src="https://img.shields.io/github/stars/Nullmess/VanillaInstincts?style=flat&logo=github" alt="Stars">
     </a>
+    <a href="https://modrinth.com/mod/vanilla-instincts/versions">
+        <img src="https://img.shields.io/badge/version-1.0.0-blue?style=flat" alt="Version">
+    </a>
     <a href="LICENSE">
         <img src="https://img.shields.io/github/license/Nullmess/VanillaInstincts?style=flat" alt="License">
     </a>
