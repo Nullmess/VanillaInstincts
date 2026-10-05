@@ -25,10 +25,6 @@
     <img src="https://hits.sh/github.com/Nullmess/VanillaInstincts.svg?label=views" alt="Views">
 </p>
 
-<p align="center">
-    <img src=".github/assets/vanilla-instincts-cover-725x274.png" alt="Vanilla Instincts preview" width="725">
-</p>
-
 ---
 
 ## ✨ Features
